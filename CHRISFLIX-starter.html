@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="CHRISFLIX — discover movies, watch authorized films, and read entertainment news." />
+  <title>CHRISFLIX | Your Entertainment. Your World.</title>
+  <style>
+    :root {
+      --bg: #090b10;
+      --panel: #121722;
+      --panel2: #1a2130;
+      --text: #f7f8fb;
+      --muted: #aab2c2;
+      --accent: #f04452;
+      --accent2: #ff7b54;
+      --line: rgba(255,255,255,.1);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    a { color: inherit; text-decoration: none; }
+    button, input { font: inherit; }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between; gap: 18px;
+      padding: 18px clamp(16px, 5vw, 64px); background: rgba(9,11,16,.92);
+      border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 20;
+      backdrop-filter: blur(14px);
+    }
+    .brand { font-size: 1.55rem; font-weight: 900; letter-spacing: -.8px; }
+    .brand span { color: var(--accent); }
+    nav { display: flex; gap: 22px; color: #d9deea; font-size: .92rem; }
+    nav a:hover { color: white; }
+    .search { display: flex; align-items: center; gap: 8px; }
+    .search input {
+      width: min(24vw, 230px); min-width: 115px; padding: 10px 13px; color: white;
+      background: var(--panel); border: 1px solid var(--line); border-radius: 999px; outline: none;
+    }
+    .search input:focus { border-color: var(--accent); }
+    .hero {
+      min-height: 480px; display: flex; align-items: center; padding: 68px clamp(16px, 7vw, 90px);
+      background:
+        radial-gradient(ellipse at 80% 30%, rgba(240,68,82,.28), transparent 40%),
+        linear-gradient(100deg, #111725 0%, #10131d 55%, #26151c 100%);
+      position: relative; overflow: hidden;
+    }
+    .hero::after {
+      content: "C"; position: absolute; right: 7%; top: 50%; transform: translateY(-50%);
+      font-size: clamp(250px, 36vw, 510px); line-height: .8; font-weight: 1000;
+      color: rgba(255,255,255,.035); pointer-events: none;
+    }
+    .hero-content { max-width: 650px; position: relative; z-index: 1; }
+    .eyebrow { color: #ff9b9f; text-transform: uppercase; letter-spacing: 2px; font-size: .75rem; font-weight: 800; }
+    h1 { font-size: clamp(2.8rem, 7vw, 5.6rem); line-height: .98; letter-spacing: -3px; margin: 14px 0 18px; }
+    .hero p { max-width: 520px; color: #c5cbd7; line-height: 1.7; font-size: 1.05rem; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
+    .btn { border: 0; border-radius: 9px; padding: 13px 19px; font-weight: 800; cursor: pointer; display: inline-flex; gap: 9px; align-items: center; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: #d93443; }
+    .btn-secondary { background: rgba(255,255,255,.1); color: white; border: 1px solid var(--line); }
+    main { padding: 34px clamp(16px, 5vw, 64px) 60px; }
+    .section-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin: 14px 0 18px; }
+    h2 { margin: 0; font-size: clamp(1.35rem, 3vw, 1.8rem); }
+    .section-head p { color: var(--muted); margin: 6px 0 0; font-size: .9rem; }
+    .chips { display: flex; flex-wrap: wrap; gap: 9px; margin: 20px 0 26px; }
+    .chip { background: var(--panel); border: 1px solid var(--line); color: #d8deea; border-radius: 999px; padding: 9px 14px; cursor: pointer; }
+    .chip.active, .chip:hover { background: var(--accent); border-color: var(--accent); color: white; }
+    .grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 18px; }
+    .movie-card { min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 13px; overflow: hidden; transition: transform .2s, border-color .2s; }
+    .movie-card:hover { transform: translateY(-4px); border-color: rgba(240,68,82,.6); }
+    .poster {
+      height: 220px; display: flex; align-items: end; padding: 15px; position: relative; overflow: hidden;
+      background: linear-gradient(145deg, #273c58, #111522 75%);
+    }
+    .poster::before { content: ""; position: absolute; inset: 0; opacity: .85; background: radial-gradient(circle at 70% 22%, rgba(255,255,255,.22), transparent 25%), linear-gradient(0deg, rgba(0,0,0,.8), transparent 70%); }
+    .poster .poster-mark { position: absolute; top: 15px; right: 16px; font-size: 3.8rem; opacity: .17; font-weight: 1000; }
+    .poster strong { position: relative; z-index: 1; font-size: 1.22rem; text-shadow: 0 2px 10px #000; }
+    .poster.red { background: linear-gradient(145deg, #6d1e2b, #17131e 75%); }
+    .poster.gold { background: linear-gradient(145deg, #85602c, #191620 75%); }
+    .poster.blue { background: linear-gradient(145deg, #1e5c70, #101722 75%); }
+    .poster.purple { background: linear-gradient(145deg, #533c83, #171321 75%); }
+    .poster.green { background: linear-gradient(145deg, #245b48, #101b1b 75%); }
+    .poster.orange { background: linear-gradient(145deg, #9a4927, #20151b 75%); }
+    .movie-info { padding: 14px; }
+    .movie-info h3 { margin: 0 0 7px; font-size: 1rem; }
+    .meta { color: var(--muted); font-size: .82rem; display: flex; justify-content: space-between; gap: 8px; }
+    .movie-info button { margin-top: 13px; width: 100%; }
+    .empty { display: none; padding: 25px; color: var(--muted); text-align: center; border: 1px dashed var(--line); border-radius: 12px; }
+    .news-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; margin-top: 18px; }
+    .news-card { background: var(--panel); padding: 20px; border: 1px solid var(--line); border-radius: 12px; }
+    .news-card .tag { color: #ff9b9f; text-transform: uppercase; font-size: .72rem; font-weight: 800; letter-spacing: 1px; }
+    .news-card h3 { margin: 10px 0; }
+    .news-card p { color: var(--muted); line-height: 1.6; font-size: .92rem; margin-bottom: 0; }
+    .notice { margin-top: 28px; padding: 16px 18px; border-radius: 10px; background: rgba(240,68,82,.08); border: 1px solid rgba(240,68,82,.25); color: #d6dbe5; line-height: 1.55; font-size: .88rem; }
+    footer { padding: 26px clamp(16px, 5vw, 64px); border-top: 1px solid var(--line); color: var(--muted); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 14px; font-size: .85rem; }
+    .modal { display: none; position: fixed; inset: 0; z-index: 50; padding: 20px; background: rgba(0,0,0,.82); align-items: center; justify-content: center; }
+    .modal.open { display: flex; }
+    .modal-box { width: min(800px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 15px; padding: 22px; }
+    .modal-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .modal-head h2 { font-size: 1.3rem; }
+    .close { background: transparent; color: white; border: 1px solid var(--line); border-radius: 8px; padding: 7px 11px; cursor: pointer; }
+    video { display: block; width: 100%; max-height: 60vh; margin-top: 16px; background: #000; border-radius: 9px; }
+    .modal-help { color: var(--muted); line-height: 1.6; font-size: .9rem; }
+    @media (max-width: 850px) {
+      nav { display: none; }
+      .grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .news-grid { grid-template-columns: 1fr; }
+      .poster { height: 190px; }
+    }
+    @media (max-width: 430px) {
+      .topbar { padding: 14px 13px; gap: 10px; }
+      .brand { font-size: 1.25rem; }
+      .search input { width: 115px; min-width: 0; padding: 9px 10px; }
+      .hero { min-height: 430px; padding-top: 52px; padding-bottom: 52px; }
+      h1 { letter-spacing: -1.8px; }
+      .grid { gap: 11px; }
+      .poster { height: 155px; padding: 10px; }
+      .poster strong { font-size: 1rem; }
+      .movie-info { padding: 11px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#"><span>CHRIS</span>FLIX</a>
+    <nav aria-label="Main navigation">
+      <a href="#movies">Movies</a>
+      <a href="#downloads">Downloads</a>
+      <a href="#news">Movie News</a>
+    </nav>
+    <div class="search">
+      <input id="searchInput" type="search" placeholder="Search movies..." aria-label="Search movies" />
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-content">
+      <div class="eyebrow">Your entertainment. Your world.</div>
+      <h1>Big stories.<br />One screen.</h1>
+      <p>Discover films, explore new releases, and catch up on entertainment news — all in one place.</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="#movies">▶ Explore Movies</a>
+        <a class="btn btn-secondary" href="#news">Read Movie News</a>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <section id="movies">
+      <div class="section-head">
+        <div>
+          <h2>Explore the collection</h2>
+          <p>Demo titles for the website layout — replace these with films you have permission to stream or distribute.</p>
+        </div>
+      </div>
+      <div class="chips" id="filters">
+        <button class="chip active" data-filter="All">All</button>
+        <button class="chip" data-filter="Nollywood">Nollywood</button>
+        <button class="chip" data-filter="Hollywood">Hollywood</button>
+        <button class="chip" data-filter="Bollywood">Bollywood</button>
+        <button class="chip" data-filter="Comedy">Comedy</button>
+        <button class="chip" data-filter="Action">Action</button>
+      </div>
+      <div class="grid" id="movieGrid">
+        <article class="movie-card" data-title="Lagos Sunrise" data-category="Nollywood Drama">
+          <div class="poster red"><span class="poster-mark">01</span><strong>Lagos Sunrise</strong></div>
+          <div class="movie-info"><h3>Lagos Sunrise</h3><div class="meta"><span>Nollywood · Drama</span><span>2025</span></div><button class="btn btn-primary watch-btn" data-title="Lagos Sunrise">▶ Watch details</button></div>
+        </article>
+        <article class="movie-card" data-title="The Last Mission" data-category="Hollywood Action">
+          <div class="poster blue"><span class="poster-mark">02</span><strong>The Last Mission</strong></div>
+          <div class="movie-info"><h3>The Last Mission</h3><div class="meta"><span>Hollywood · Action</span><span>2024</span></div><button class="btn btn-primary watch-btn" data-title="The Last Mission">▶ Watch details</button></div>
+        </article>
+        <article class="movie-card" data-title="Monsoon Hearts" data-category="Bollywood Romance">
+          <div class="poster gold"><span class="poster-mark">03</span><strong>Monsoon Hearts</strong></div>
+          <div class="movie-info"><h3>Monsoon Hearts</h3><div class="meta"><span>Bollywood · Romance</span><span>2025</span></div><button class="btn btn-primary watch-btn" data-title="Monsoon Hearts">▶ Watch details</button></div>
+        </article>
+        <article class="movie-card" data-title="Laugh Out Loud" data-category="Nollywood Comedy">
+          <div class="poster orange"><span class="poster-mark">04</span><strong>Laugh Out Loud</strong></div>
+          <div class="movie-info"><h3>Laugh Out Loud</h3><div class="meta"><span>Nollywood · Comedy</span><span>2024</span></div><button class="btn btn-primary watch-btn" data-title="Laugh Out Loud">▶ Watch details</button></div>
+        </article>
+        <article class="movie-card" data-title="Shadow City" data-category="Hollywood Action">
+          <div class="poster purple"><span class="poster-mark">05</span><strong>Shadow City</strong></div>
+          <div class="movie-info"><h3>Shadow City</h3><div class="meta"><span>Hollywood · Action</span><span>2023</span></div><button class="btn btn-primary watch-btn" data-title="Shadow City">▶ Watch details</button></div>
+        </article>
+        <article class="movie-card" data-title="Green Promise" data-category="Nollywood Drama">
+          <div class="poster green"><span class="poster-mark">06</span><strong>Green Promise</strong></div>
+          <div class="movie-info"><h3>Green Promise</h3><div class="meta"><span>Nollywood · Drama</span><span>2025</span></div><button class="btn btn-primary watch-btn" data-title="Green Promise">▶ Watch details</button></div>
+        </article>
+        <article class="movie-card" data-title="Weekend Hustle" data-category="Hollywood Comedy">
+          <div class="poster gold"><span class="poster-mark">07</span><strong>Weekend Hustle</strong></div>
+          <div class="movie-info"><h3>Weekend Hustle</h3><div class="meta"><span>Hollywood · Comedy</span><span>2024</span></div><button class="btn btn-primary watch-btn" data-title="Weekend Hustle">▶ Watch details</button></div>
+        </article>
+        <article class="movie-card" data-title="Royal Promise" data-category="Bollywood Drama">
+          <div class="poster blue"><span class="poster-mark">08</span><strong>Royal Promise</strong></div>
+          <div class="movie-info"><h3>Royal Promise</h3><div class="meta"><span>Bollywood · Drama</span><span>2023</span></div><button class="btn btn-primary watch-btn" data-title="Royal Promise">▶ Watch details</button></div>
+        </article>
+      </div>
+      <div class="empty" id="emptyState">No movies match your search. Try another title.</div>
+    </section>
+
+    <section id="downloads" style="margin-top:54px">
+      <div class="section-head">
+        <div><h2>Downloads</h2><p>Download buttons can be enabled for films whose owners permit downloads.</p></div>
+      </div>
+      <div class="notice">Download links are not active in this starter version. Add a download link only for a movie you own or are authorized to distribute.</div>
+    </section>
+
+    <section id="news" style="margin-top:54px">
+      <div class="section-head">
+        <div><h2>Entertainment desk</h2><p>Sample news cards — replace these with your own original articles and verified updates.</p></div>
+      </div>
+      <div class="news-grid">
+        <article class="news-card"><div class="tag">Industry Watch</div><h3>What makes a great movie night?</h3><p>Build a watchlist, explore different genres, and share recommendations with friends.</p></article>
+        <article class="news-card"><div class="tag">Coming Soon</div><h3>How to follow upcoming releases</h3><p>Keep track of official studio announcements and verified release dates.</p></article>
+        <article class="news-card"><div class="tag">Behind the Scenes</div><h3>Meet the independent filmmakers</h3><p>Feature creators who have agreed to share their work with the CHRISFLIX audience.</p></article>
+      </div>
+    </section>
+    <div class="notice"><strong>Before launch:</strong> this is a front-end demo. To stream real movies, connect a video host and use films you own, licensed titles, or videos whose creators have explicitly authorized streaming. A secure backend, content management, and monetization setup can be added later.</div>
+  </main>
+
+  <footer>
+    <div><strong>CHRISFLIX</strong> · Your Entertainment. Your World.</div>
+    <div>© <span id="year"></span> CHRISFLIX. All rights reserved.</div>
+  </footer>
+
+  <div class="modal" id="watchModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-box">
+      <div class="modal-head"><h2 id="modalTitle">Movie details</h2><button class="close" id="closeModal">Close ✕</button></div>
+      <video id="moviePlayer" controls playsinline hidden></video>
+      <p class="modal-help" id="modalHelp">This is a demo movie card. To enable playback, add the authorized movie's video URL to the site code. Never use a movie file or stream without permission.</p>
+    </div>
+  </div>
+
+  <script>
+    const searchInput = document.getElementById('searchInput');
+    const cards = [...document.querySelectorAll('.movie-card')];
+    const emptyState = document.getElementById('emptyState');
+    let activeFilter = 'All';
+
+    function filterMovies() {
+      const query = searchInput.value.trim().toLowerCase();
+      let visible = 0;
+      cards.forEach(card => {
+        const matchesQuery = (card.dataset.title + ' ' + card.dataset.category).toLowerCase().includes(query);
+        const matchesFilter = activeFilter === 'All' || card.dataset.category.includes(activeFilter);
+        const show = matchesQuery && matchesFilter;
+        card.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      emptyState.style.display = visible ? 'none' : 'block';
+    }
+    searchInput.addEventListener('input', filterMovies);
+    document.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        activeFilter = chip.dataset.filter;
+        filterMovies();
+      });
+    });
+
+    const modal = document.getElementById('watchModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalHelp = document.getElementById('modalHelp');
+    const player = document.getElementById('moviePlayer');
+    document.querySelectorAll('.watch-btn').forEach(button => {
+      button.addEventListener('click', () => {
+        modalTitle.textContent = button.dataset.title;
+        player.pause();
+        player.removeAttribute('src');
+        player.load();
+        player.hidden = true;
+        modalHelp.hidden = false;
+        modalHelp.textContent = 'This is a demo movie card. To enable playback, add the authorized movie’s video URL to the site code. Never use a movie file or stream without permission.';
+        modal.classList.add('open');
+      });
+    });
+    function closeModal() {
+      modal.classList.remove('open');
+      player.pause();
+    }
+    document.getElementById('closeModal').addEventListener('click', closeModal);
+    modal.addEventListener('click', event => { if (event.target === modal) closeModal(); });
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') closeModal(); });
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
