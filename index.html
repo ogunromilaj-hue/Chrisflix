@@ -965,44 +965,86 @@
     }
 
     function playMovie() {
-      if (!currentMovie) return;
+  if (!currentMovie) return;
 
-      const videoId = getYouTubeId(
-        currentMovie.youtube_url || ""
-      );
+  const videoUrl =
+    currentMovie.video_url ||
+    currentMovie.youtube_url ||
+    "";
 
-      if (!videoId) {
-        resetPlayer();
+  resetPlayer();
 
-        playerMessage.textContent =
-          "This movie doesn't have a valid YouTube link yet.";
+  if (!videoUrl) {
+    playerMessage.textContent =
+      "This movie doesn't have a video link yet.";
+    return;
+  }
 
-        return;
-      }
+  playerBox.replaceChildren();
 
-      playerBox.replaceChildren();
+  // Support YouTube videos
+  const videoId = getYouTubeId(videoUrl);
 
-      const iframe = document.createElement("iframe");
+  if (videoId) {
+    const iframe = document.createElement("iframe");
 
-      iframe.src =
-        "https://www.youtube-nocookie.com/embed/" +
-        videoId +
-        "?autoplay=1&rel=0&playsinline=1";
+    iframe.src =
+      "https://www.youtube-nocookie.com/embed/" +
+      videoId +
+      "?autoplay=1&rel=0&playsinline=1";
 
-      iframe.title = currentMovie.title || "Movie player";
+    iframe.title = currentMovie.title || "Movie player";
 
-      iframe.allow =
-        "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+    iframe.allow =
+      "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
 
-      iframe.setAttribute("allowfullscreen", "");
+    iframe.setAttribute("allowfullscreen", "");
+    iframe.referrerPolicy = "strict-origin-when-cross-origin";
 
-      iframe.referrerPolicy = "strict-origin-when-cross-origin";
+    playerBox.appendChild(iframe);
 
-      playerBox.appendChild(iframe);
+    playerMessage.textContent =
+      "If playback fails, the video owner may have disabled embedded playback.";
 
-      playerMessage.textContent =
-        "If playback fails, the video owner may have disabled embedded playback.";
-    }
+    return;
+  }
+
+  // Support direct video files
+  if (/\.(mp4|webm|ogg)(\?.*)?$/i.test(videoUrl)) {
+    const video = document.createElement("video");
+
+    video.src = videoUrl;
+    video.controls = true;
+    video.autoplay = true;
+    video.playsInline = true;
+    video.preload = "metadata";
+
+    playerBox.appendChild(video);
+
+    playerMessage.textContent = "";
+    return;
+  }
+
+  // Support Cloudinary video player links
+  if (videoUrl.includes("player.cloudinary.com")) {
+    const iframe = document.createElement("iframe");
+
+    iframe.src = videoUrl;
+    iframe.title = currentMovie.title || "Movie player";
+    iframe.allow =
+      "autoplay; fullscreen; encrypted-media; picture-in-picture";
+    iframe.setAttribute("allowfullscreen", "");
+    iframe.referrerPolicy = "strict-origin-when-cross-origin";
+
+    playerBox.appendChild(iframe);
+
+    playerMessage.textContent = "";
+    return;
+  }
+
+  playerMessage.textContent =
+    "Unsupported video link. Please check the video URL.";
+}
 
     async function loadMyList() {
       myListIds = new Set();
