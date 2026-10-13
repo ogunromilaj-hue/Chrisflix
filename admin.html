@@ -71,6 +71,11 @@
       cursor: pointer;
     }
 
+    button:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
     .primary {
       background: #e50914;
       color: white;
@@ -98,14 +103,15 @@
     .muted {
       color: #aaa;
       font-size: 14px;
-      line-height: 1.5;
+      line-height: 1.6;
     }
 
     #dashboard {
       display: none;
     }
 
-    #status {
+    #status,
+    #loginStatus {
       white-space: pre-wrap;
       line-height: 1.5;
       margin-top: 12px;
@@ -121,6 +127,28 @@
 
     a {
       color: #ff6868;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    .video-option {
+      padding: 14px;
+      margin: 15px 0;
+      border: 1px solid #383838;
+      border-radius: 9px;
+    }
+
+    .video-option h3 {
+      margin: 0;
+      color: #ff6868;
+    }
+
+    .video-option input {
+      margin-bottom: 5px;
     }
   </style>
 </head>
@@ -168,8 +196,9 @@
         <h2>🎥 Add or Edit Movie</h2>
 
         <p class="muted">
-          Add a YouTube video that allows embedding. The movie will play
-          inside ChrisFlix when the homepage player supports it.
+          Add a movie using either YouTube or Cloudinary.
+          Choose ONE video source for each movie.
+          Your existing YouTube option is still available.
         </p>
 
         <form id="movieForm">
@@ -183,13 +212,37 @@
             required
           >
 
-          <label for="youtubeUrl">YouTube Video Link *</label>
-          <input
-            id="youtubeUrl"
-            type="url"
-            placeholder="https://www.youtube.com/watch?v=..."
-            required
-          >
+          <div class="video-option">
+            <h3>📺 Option 1: YouTube</h3>
+
+            <label for="youtubeUrl">YouTube Video Link</label>
+            <input
+              id="youtubeUrl"
+              type="url"
+              placeholder="https://www.youtube.com/watch?v=..."
+            >
+
+            <p class="muted">
+              Paste a YouTube link that allows embedded playback.
+              Leave this empty if you are using Cloudinary.
+            </p>
+          </div>
+
+          <div class="video-option">
+            <h3>☁️ Option 2: Cloudinary</h3>
+
+            <label for="cloudinaryUrl">Cloudinary Video URL</label>
+            <input
+              id="cloudinaryUrl"
+              type="url"
+              placeholder="https://player.cloudinary.com/embed/?..."
+            >
+
+            <p class="muted">
+              Paste your Cloudinary video player URL here.
+              Leave this empty if you are using YouTube.
+            </p>
+          </div>
 
           <label for="category">Category *</label>
           <select id="category" required>
@@ -226,8 +279,9 @@
           >
 
           <p class="muted">
-            If you leave the poster field empty, the homepage can use
-            the YouTube thumbnail automatically.
+            YouTube thumbnails may be generated automatically by the
+            homepage. For Cloudinary videos, add a poster URL if you
+            want a specific movie poster.
           </p>
 
           <button class="primary" type="submit" id="saveButton">
@@ -323,6 +377,22 @@
       }
     }
 
+    function validCloudinaryUrl(value) {
+      try {
+        const url = new URL(value);
+
+        return (
+          url.protocol === "https:" &&
+          (
+            url.hostname.toLowerCase() === "player.cloudinary.com" ||
+            url.hostname.toLowerCase() === "res.cloudinary.com"
+          )
+        );
+      } catch {
+        return false;
+      }
+    }
+
     async function checkAdmin() {
       const { data: { session }, error } =
         await db.auth.getSession();
@@ -332,8 +402,7 @@
         return;
       }
 
-      // The database's existing admin policies remain responsible
-      // for deciding whether this account can manage movies.
+      // Supabase database policies must authorize admin operations.
       showLoggedIn();
       await loadMovies();
     }
@@ -382,6 +451,9 @@
         const youtubeUrl =
           document.getElementById("youtubeUrl").value.trim();
 
+        const cloudinaryUrl =
+          document.getElementById("cloudinaryUrl").value.trim();
+
         const category =
           document.getElementById("category").value;
 
@@ -399,10 +471,38 @@
           return;
         }
 
-        if (!validYouTubeUrl(youtubeUrl)) {
+        // Exactly one video source must be provided.
+        if (!youtubeUrl && !cloudinaryUrl) {
           showMessage(
             status,
-            "Please enter a valid YouTube video link.",
+            "Please enter either a YouTube URL or a Cloudinary URL.",
+            true
+          );
+          return;
+        }
+
+        if (youtubeUrl && cloudinaryUrl) {
+          showMessage(
+            status,
+            "Please use only ONE video source per movie. Clear either the YouTube URL or the Cloudinary URL.",
+            true
+          );
+          return;
+        }
+
+        if (youtubeUrl && !validYouTubeUrl(youtubeUrl)) {
+          showMessage(
+            status,
+            "Please enter a valid YouTube URL.",
+            true
+          );
+          return;
+        }
+
+        if (cloudinaryUrl && !validCloudinaryUrl(cloudinaryUrl)) {
+          showMessage(
+            status,
+            "Please enter a valid Cloudinary player or video URL.",
             true
           );
           return;
@@ -428,9 +528,17 @@
         }
 
         const movie = {
-          title,
-          youtube_url: youtubeUrl,
-          category,
+          title: title,
+
+          // Preserve the existing YouTube database field.
+          // An empty string keeps compatibility if this column
+          // is configured as NOT NULL.
+          youtube_url: youtubeUrl || "",
+
+          // Store the Cloudinary link in the new database column.
+          video_url: cloudinaryUrl || null,
+
+          category: category,
           description: description || null,
           release_year: releaseYear,
           poster_url: posterUrl || null
@@ -469,8 +577,9 @@
 
         showMessage(
           status,
-          id ? "Movie updated successfully! 🎉" :
-               "Movie added successfully! 🎉"
+          id
+            ? "Movie updated successfully! 🎉"
+            : "Movie added successfully! 🎉"
         );
 
         clearForm();
@@ -496,7 +605,7 @@
       const { data, error } = await db
         .from("movies")
         .select(
-          "id, title, youtube_url, category, description, release_year, poster_url"
+          "id, title, youtube_url, video_url, category, description, release_year, poster_url"
         )
         .order("created_at", { ascending: false });
 
@@ -511,29 +620,34 @@
         return;
       }
 
-      moviesList.innerHTML = "";
+      moviesList.replaceChildren();
 
       data.forEach(function(movie) {
         const item = document.createElement("div");
         item.className = "movie";
 
         const title = document.createElement("strong");
-        title.textContent = movie.title;
+        title.textContent = movie.title || "Untitled movie";
 
         const details = document.createElement("p");
         details.className = "muted";
 
-        const parts = [movie.category];
+        const parts = [movie.category || "Uncategorized"];
 
         if (movie.release_year) {
           parts.push(String(movie.release_year));
         }
 
+        parts.push(
+          movie.video_url ? "Cloudinary" : "YouTube"
+        );
+
         details.textContent = parts.join(" • ");
 
         const description = document.createElement("p");
         description.className = "muted";
-        description.textContent = movie.description || "No description";
+        description.textContent =
+          movie.description || "No description";
 
         const editButton = document.createElement("button");
         editButton.className = "secondary";
@@ -541,15 +655,24 @@
 
         editButton.addEventListener("click", function() {
           document.getElementById("movieId").value = movie.id;
-          document.getElementById("title").value = movie.title || "";
+          document.getElementById("title").value =
+            movie.title || "";
+
           document.getElementById("youtubeUrl").value =
             movie.youtube_url || "";
+
+          document.getElementById("cloudinaryUrl").value =
+            movie.video_url || "";
+
           document.getElementById("category").value =
             movie.category || "Hollywood";
+
           document.getElementById("description").value =
             movie.description || "";
+
           document.getElementById("releaseYear").value =
             movie.release_year || "";
+
           document.getElementById("posterUrl").value =
             movie.poster_url || "";
 
@@ -558,7 +681,10 @@
 
           status.textContent = "Editing: " + movie.title;
 
-          window.scrollTo({ top: 0, behavior: "smooth" });
+          window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+          });
         });
 
         const deleteButton = document.createElement("button");
