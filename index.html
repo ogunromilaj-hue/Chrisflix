@@ -402,6 +402,58 @@
         padding: 0 14px 20px;
       }
     }
+    /* More Like This */
+.related-section {
+  margin-top: 28px;
+  border-top: 1px solid #303030;
+  padding-top: 20px;
+}
+
+.related-section h3 {
+  margin: 0 0 14px;
+  font-size: 20px;
+}
+
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.related-card {
+  min-width: 0;
+  cursor: pointer;
+  background: #202020;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #303030;
+}
+
+.related-card .poster {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+}
+
+.related-card h4 {
+  margin: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.related-empty {
+  color: #aaa;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+@media (max-width: 480px) {
+  .related-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
   </style>
 </head>
 
@@ -581,7 +633,10 @@
           Some YouTube videos do not allow embedded playback.
         </p>
 
-        <p id="playerMessage" role="status"></p>
+        <section class="related-section">
+  <h3>More Like This</h3>
+  <div id="relatedMovies" class="related-grid"></div>
+</section>
       </div>
     </div>
   </div>
@@ -604,6 +659,7 @@
     const myListGrid = document.getElementById("myListGrid");
     const modal = document.getElementById("movieModal");
     const playerBox = document.getElementById("playerBox");
+    const relatedMovies = document.getElementById("relatedMovies");
 
     let movies = [];
     let myListIds = new Set();
@@ -831,11 +887,68 @@
 
       resetPlayer();
       updateListButton();
+      renderRelatedMovies();
 
       modal.classList.add("open");
       document.body.style.overflow = "hidden";
     }
+    
+function renderRelatedMovies() {
+  relatedMovies.replaceChildren();
 
+  if (!currentMovie || !movies.length) {
+    relatedMovies.textContent = "No related movies available yet.";
+    return;
+  }
+
+  const others = movies.filter(
+    movie => movie.id !== currentMovie.id
+  );
+
+  const sameCategory = others.filter(
+    movie =>
+      movie.category &&
+      currentMovie.category &&
+      movie.category.toLowerCase() ===
+        currentMovie.category.toLowerCase()
+  );
+
+  const recommendations = (
+    sameCategory.length ? sameCategory : others
+  ).slice(0, 8);
+
+  if (!recommendations.length) {
+    relatedMovies.textContent = "Add more movies to see recommendations.";
+    return;
+  }
+
+  recommendations.forEach(movie => {
+    const card = document.createElement("div");
+    card.className = "related-card";
+
+    const poster = document.createElement("img");
+    poster.className = "poster";
+    poster.src = getPoster(movie);
+    poster.alt = movie.title || "Movie poster";
+    poster.loading = "lazy";
+
+    const title = document.createElement("h4");
+    title.textContent = movie.title || "Untitled";
+
+    const meta = document.createElement("div");
+    meta.className = "movie-meta";
+    meta.textContent = movie.release_year || movie.category || "";
+
+    card.append(poster, title, meta);
+
+    card.addEventListener("click", () => {
+      openMovie(movie);
+      playMovie();
+    });
+
+    relatedMovies.appendChild(card);
+  });
+}
     function resetPlayer() {
       playerBox.replaceChildren();
 
