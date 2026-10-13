@@ -758,7 +758,7 @@
 
       const { data, error } = await db
         .from("movies")
-        .select("id,title,youtube_url,category,description,release_year,poster_url")
+        .select("id,title,youtube_url,video_url,category,description,release_year,poster_url")
         .order("created_at", { ascending: false });
 
       if (error) {
