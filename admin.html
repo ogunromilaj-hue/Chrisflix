@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ChrisFlix Admin Dashboard</title>
+  <title>ChrisFlix Admin</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -15,9 +15,14 @@
     body {
       margin: 0;
       padding: 20px;
-      background: #101010;
-      color: white;
+      background: #090909;
+      color: #fff;
       font-family: Arial, sans-serif;
+    }
+
+    .container {
+      max-width: 850px;
+      margin: auto;
     }
 
     h1 {
@@ -25,365 +30,599 @@
       text-align: center;
     }
 
-    .container {
-      max-width: 650px;
-      margin: 30px auto;
-      padding: 22px;
-      background: #202020;
-      border-radius: 12px;
+    h2 {
+      margin-top: 0;
     }
 
-    input, button, select {
+    .card {
+      background: #181818;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      border: 1px solid #303030;
+    }
+
+    input,
+    textarea,
+    select {
+      display: block;
       width: 100%;
       padding: 13px;
-      margin: 8px 0;
-      border: none;
-      border-radius: 6px;
+      margin: 10px 0;
+      border: 1px solid #444;
+      border-radius: 7px;
+      background: #101010;
+      color: white;
       font-size: 16px;
     }
 
-    input, select {
-      background: #333;
-      color: white;
+    textarea {
+      min-height: 100px;
+      resize: vertical;
     }
 
     button {
-      background: #e50914;
-      color: white;
+      border: 0;
+      border-radius: 7px;
+      padding: 12px 16px;
+      margin: 5px 4px 5px 0;
+      font-size: 15px;
       font-weight: bold;
       cursor: pointer;
     }
 
+    .primary {
+      background: #e50914;
+      color: white;
+    }
+
     .secondary {
-      background: #444;
+      background: #333;
+      color: white;
     }
 
     .movie {
-      background: #303030;
-      padding: 15px;
-      margin-top: 12px;
-      border-radius: 8px;
+      padding: 15px 0;
+      border-bottom: 1px solid #383838;
       overflow-wrap: anywhere;
     }
 
-    .movie button {
-      width: 48%;
+    .movie:last-child {
+      border-bottom: none;
     }
 
-    .hidden {
+    .movie strong {
+      font-size: 18px;
+    }
+
+    .muted {
+      color: #aaa;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    #dashboard {
       display: none;
     }
 
-    #message, #loginMessage {
+    #status {
       white-space: pre-wrap;
-      overflow-wrap: anywhere;
-      color: #ffd166;
+      line-height: 1.5;
+      margin-top: 12px;
+    }
+
+    .success {
+      color: #55dd88;
+    }
+
+    .error {
+      color: #ff7777;
+    }
+
+    a {
+      color: #ff6868;
     }
   </style>
 </head>
 
 <body>
+  <div class="container">
 
-  <h1>🎬 ChrisFlix Admin</h1>
+    <h1>🎬 ChrisFlix Admin</h1>
 
-  <div class="container" id="loginBox">
-    <h2>Admin Login</h2>
+    <div id="loginBox" class="card">
+      <h2>Admin Login</h2>
 
-    <input
-      type="email"
-      id="email"
-      placeholder="Admin email"
-      autocomplete="username"
-    >
+      <p class="muted">
+        Sign in with your existing ChrisFlix administrator account.
+      </p>
 
-    <input
-      type="password"
-      id="password"
-      placeholder="Admin password"
-      autocomplete="current-password"
-    >
+      <form id="loginForm">
+        <input
+          type="email"
+          id="email"
+          placeholder="Admin email"
+          autocomplete="username"
+          required
+        >
 
-    <button id="loginBtn" onclick="login()">Login</button>
+        <input
+          type="password"
+          id="password"
+          placeholder="Password"
+          autocomplete="current-password"
+          required
+        >
 
-    <p id="loginMessage"></p>
-  </div>
+        <button class="primary" type="submit">
+          Login
+        </button>
+      </form>
 
-  <div class="container hidden" id="dashboard">
+      <p id="loginStatus" role="status"></p>
+    </div>
 
-    <h2>Manage Movies</h2>
+    <div id="dashboard">
 
-    <p>Add, edit, and delete movies in your collection.</p>
+      <div class="card">
+        <h2>🎥 Add or Edit Movie</h2>
 
-    <input type="hidden" id="movieId">
+        <p class="muted">
+          Add a YouTube video that allows embedding. The movie will play
+          inside ChrisFlix when the homepage player supports it.
+        </p>
 
-    <input
-      type="text"
-      id="title"
-      placeholder="Movie title"
-    >
+        <form id="movieForm">
+          <input type="hidden" id="movieId">
 
-    <input
-      type="url"
-      id="youtubeUrl"
-      placeholder="YouTube video URL"
-    >
+          <label for="title">Movie Title *</label>
+          <input
+            id="title"
+            type="text"
+            placeholder="Movie title"
+            required
+          >
 
-    <select id="category">
-      <option value="Indian Cinema">Indian Cinema</option>
-      <option value="Nollywood">Nollywood</option>
-      <option value="Hollywood">Hollywood</option>
-      <option value="Action">Action</option>
-      <option value="Comedy">Comedy</option>
-      <option value="Drama">Drama</option>
-      <option value="Romance">Romance</option>
-      <option value="Animation">Animation</option>
-    </select>
+          <label for="youtubeUrl">YouTube Video Link *</label>
+          <input
+            id="youtubeUrl"
+            type="url"
+            placeholder="https://www.youtube.com/watch?v=..."
+            required
+          >
 
-    <button id="saveBtn" onclick="saveMovie()">Add Movie</button>
+          <label for="category">Category *</label>
+          <select id="category" required>
+            <option value="Indian Cinema">Indian Cinema</option>
+            <option value="Nollywood">Nollywood</option>
+            <option value="Hollywood">Hollywood</option>
+            <option value="Action">Action</option>
+            <option value="Comedy">Comedy</option>
+            <option value="Drama">Drama</option>
+            <option value="Romance">Romance</option>
+            <option value="Animation">Animation</option>
+          </select>
 
-    <button class="secondary" onclick="clearForm()">
-      Clear Form
-    </button>
+          <label for="description">Movie Description</label>
+          <textarea
+            id="description"
+            placeholder="Write a short description of the movie..."
+          ></textarea>
 
-    <button class="secondary" onclick="logout()">
-      Logout
-    </button>
+          <label for="releaseYear">Release Year</label>
+          <input
+            id="releaseYear"
+            type="number"
+            min="1888"
+            max="2100"
+            placeholder="e.g. 2025"
+          >
 
-    <p id="message"></p>
+          <label for="posterUrl">Poster Image Link (Optional)</label>
+          <input
+            id="posterUrl"
+            type="url"
+            placeholder="https://example.com/poster.jpg"
+          >
 
-    <hr>
+          <p class="muted">
+            If you leave the poster field empty, the homepage can use
+            the YouTube thumbnail automatically.
+          </p>
 
-    <h2>Existing Movies</h2>
+          <button class="primary" type="submit" id="saveButton">
+            Add Movie
+          </button>
 
-    <div id="movieList">Loading movies...</div>
+          <button
+            class="secondary"
+            type="button"
+            id="clearButton"
+          >
+            Clear Form
+          </button>
+        </form>
 
+        <p id="status" role="status"></p>
+      </div>
+
+      <div class="card">
+        <h2>📽️ Your Movie Collection</h2>
+
+        <button class="secondary" id="refreshButton" type="button">
+          Refresh Movies
+        </button>
+
+        <div id="moviesList">
+          Loading movies...
+        </div>
+      </div>
+
+      <div class="card">
+        <button class="secondary" id="logoutButton" type="button">
+          Logout
+        </button>
+
+        <p>
+          <a href="/" target="_blank" rel="noopener">
+            Open ChrisFlix Homepage
+          </a>
+        </p>
+      </div>
+
+    </div>
   </div>
 
   <script>
-    // Your Supabase project details
     const SUPABASE_URL =
       "https://fkjgfapbqshtbvqsfqok.supabase.co";
 
-    const SUPABASE_PUBLISHABLE_KEY =
+    const SUPABASE_KEY =
       "sb_publishable_aiT_SYadkUUPpEwLaZtJFQ_0tFeb0sf";
 
     const db = window.supabase.createClient(
       SUPABASE_URL,
-      SUPABASE_PUBLISHABLE_KEY
+      SUPABASE_KEY
     );
 
-    let currentUser = null;
+    const loginBox = document.getElementById("loginBox");
+    const dashboard = document.getElementById("dashboard");
+    const loginStatus = document.getElementById("loginStatus");
+    const status = document.getElementById("status");
+    const moviesList = document.getElementById("moviesList");
 
-    function showMessage(message) {
-      document.getElementById("message").textContent = message;
+    function showMessage(element, message, isError = false) {
+      element.textContent = message;
+      element.className = isError ? "error" : "success";
     }
 
-    async function login() {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
-      const button = document.getElementById("loginBtn");
-      const message = document.getElementById("loginMessage");
+    function showLoggedOut() {
+      loginBox.style.display = "block";
+      dashboard.style.display = "none";
+    }
 
-      if (!email || !password) {
-        message.textContent = "Enter your admin email and password.";
+    function showLoggedIn() {
+      loginBox.style.display = "none";
+      dashboard.style.display = "block";
+    }
+
+    function validYouTubeUrl(value) {
+      try {
+        const url = new URL(value);
+        const host = url.hostname.toLowerCase();
+
+        return (
+          host === "youtube.com" ||
+          host.endsWith(".youtube.com") ||
+          host === "youtu.be" ||
+          host === "youtube-nocookie.com" ||
+          host.endsWith(".youtube-nocookie.com")
+        );
+      } catch {
+        return false;
+      }
+    }
+
+    async function checkAdmin() {
+      const { data: { session }, error } =
+        await db.auth.getSession();
+
+      if (error || !session) {
+        showLoggedOut();
         return;
       }
 
-      button.disabled = true;
-      message.textContent = "Logging in...";
+      // The database's existing admin policies remain responsible
+      // for deciding whether this account can manage movies.
+      showLoggedIn();
+      await loadMovies();
+    }
 
-      try {
-        const { data, error } = await db.auth.signInWithPassword({
+    document.getElementById("loginForm").addEventListener(
+      "submit",
+      async function(event) {
+        event.preventDefault();
+
+        loginStatus.textContent = "Logging in...";
+
+        const email =
+          document.getElementById("email").value.trim();
+
+        const password =
+          document.getElementById("password").value;
+
+        const { error } = await db.auth.signInWithPassword({
           email,
           password
         });
 
-        if (error) throw error;
+        if (error) {
+          showMessage(loginStatus, error.message, true);
+          return;
+        }
 
-        currentUser = data.user;
-
-        document.getElementById("loginBox").classList.add("hidden");
-        document.getElementById("dashboard").classList.remove("hidden");
-
-        await loadMovies();
-
-      } catch (error) {
-        message.textContent = "Login failed: " + error.message;
-      } finally {
-        button.disabled = false;
+        loginStatus.textContent = "";
+        await checkAdmin();
       }
-    }
+    );
 
-    async function loadMovies() {
-      const list = document.getElementById("movieList");
-      list.textContent = "Loading movies...";
+    document.getElementById("movieForm").addEventListener(
+      "submit",
+      async function(event) {
+        event.preventDefault();
 
-      const { data, error } = await db
-        .from("movies")
-        .select("id, title, youtube_url, category")
-        .order("created_at", { ascending: false });
+        status.textContent = "";
 
-      if (error) {
-        list.textContent =
-          "Could not load movies: " + error.message;
-        return;
-      }
+        const id =
+          document.getElementById("movieId").value;
 
-      list.replaceChildren();
+        const title =
+          document.getElementById("title").value.trim();
 
-      if (!data || data.length === 0) {
-        list.textContent = "No movies found yet.";
-        return;
-      }
+        const youtubeUrl =
+          document.getElementById("youtubeUrl").value.trim();
 
-      data.forEach(movie => {
-        const card = document.createElement("div");
-        card.className = "movie";
+        const category =
+          document.getElementById("category").value;
 
-        const title = document.createElement("h3");
-        title.textContent = movie.title;
+        const description =
+          document.getElementById("description").value.trim();
 
-        const category = document.createElement("p");
-        category.textContent = "Category: " + movie.category;
+        const yearValue =
+          document.getElementById("releaseYear").value.trim();
 
-        const url = document.createElement("p");
-        url.textContent = movie.youtube_url;
+        const posterUrl =
+          document.getElementById("posterUrl").value.trim();
 
-        const edit = document.createElement("button");
-        edit.textContent = "Edit";
-        edit.onclick = () => editMovie(movie);
+        if (!title) {
+          showMessage(status, "Please enter a movie title.", true);
+          return;
+        }
 
-        const remove = document.createElement("button");
-        remove.textContent = "Delete";
-        remove.onclick = () => deleteMovie(movie.id, movie.title);
+        if (!validYouTubeUrl(youtubeUrl)) {
+          showMessage(
+            status,
+            "Please enter a valid YouTube video link.",
+            true
+          );
+          return;
+        }
 
-        card.append(title, category, url, edit, remove);
-        list.appendChild(card);
-      });
-    }
+        let releaseYear = null;
 
-    async function saveMovie() {
-      if (!currentUser) {
-        showMessage("Please log in first.");
-        return;
-      }
+        if (yearValue !== "") {
+          releaseYear = Number(yearValue);
 
-      const id = document.getElementById("movieId").value;
-      const title = document.getElementById("title").value.trim();
-      const youtube_url =
-        document.getElementById("youtubeUrl").value.trim();
-      const category = document.getElementById("category").value;
-      const button = document.getElementById("saveBtn");
+          if (
+            !Number.isInteger(releaseYear) ||
+            releaseYear < 1888 ||
+            releaseYear > 2100
+          ) {
+            showMessage(
+              status,
+              "Please enter a valid release year.",
+              true
+            );
+            return;
+          }
+        }
 
-      if (!title || !youtube_url) {
-        showMessage("Enter the movie title and YouTube URL.");
-        return;
-      }
+        const movie = {
+          title,
+          youtube_url: youtubeUrl,
+          category,
+          description: description || null,
+          release_year: releaseYear,
+          poster_url: posterUrl || null
+        };
 
-      if (!/^https:\/\/(www\.)?(youtube\.com|youtu\.be)\//i.test(youtube_url)) {
-        showMessage("Please enter a valid YouTube video URL.");
-        return;
-      }
+        const saveButton =
+          document.getElementById("saveButton");
 
-      button.disabled = true;
-      showMessage("Saving movie...");
+        saveButton.disabled = true;
+        saveButton.textContent = "Saving...";
 
-      try {
         let result;
 
         if (id) {
           result = await db
             .from("movies")
-            .update({ title, youtube_url, category })
+            .update(movie)
             .eq("id", id);
         } else {
           result = await db
             .from("movies")
-            .insert([{ title, youtube_url, category }]);
+            .insert([movie]);
         }
 
-        if (result.error) throw result.error;
+        saveButton.disabled = false;
+        saveButton.textContent = id ? "Save Changes" : "Add Movie";
 
-        showMessage(id ? "Movie updated!" : "Movie added!");
+        if (result.error) {
+          showMessage(
+            status,
+            "Could not save movie: " + result.error.message,
+            true
+          );
+          return;
+        }
+
+        showMessage(
+          status,
+          id ? "Movie updated successfully! 🎉" :
+               "Movie added successfully! 🎉"
+        );
 
         clearForm();
         await loadMovies();
-
-      } catch (error) {
-        showMessage("Could not save movie: " + error.message);
-      } finally {
-        button.disabled = false;
       }
+    );
+
+    function clearForm() {
+      document.getElementById("movieForm").reset();
+      document.getElementById("movieId").value = "";
+      document.getElementById("saveButton").textContent = "Add Movie";
+      status.textContent = "";
     }
 
-    function editMovie(movie) {
-      document.getElementById("movieId").value = movie.id;
-      document.getElementById("title").value = movie.title;
-      document.getElementById("youtubeUrl").value = movie.youtube_url;
-      document.getElementById("category").value = movie.category;
+    document.getElementById("clearButton").addEventListener(
+      "click",
+      clearForm
+    );
 
-      document.getElementById("saveBtn").textContent = "Update Movie";
+    async function loadMovies() {
+      moviesList.textContent = "Loading movies...";
 
-      window.scrollTo({ top: 0, behavior: "smooth" });
-
-      showMessage("Edit the details, then tap Update Movie.");
-    }
-
-    async function deleteMovie(id, title) {
-      if (!currentUser) return;
-
-      if (!confirm('Delete "' + title + '"?')) return;
-
-      const { error } = await db
+      const { data, error } = await db
         .from("movies")
-        .delete()
-        .eq("id", id);
+        .select(
+          "id, title, youtube_url, category, description, release_year, poster_url"
+        )
+        .order("created_at", { ascending: false });
 
       if (error) {
-        showMessage("Could not delete movie: " + error.message);
+        moviesList.textContent =
+          "Could not load movies: " + error.message;
         return;
       }
 
-      showMessage("Movie deleted.");
-      await loadMovies();
+      if (!data || data.length === 0) {
+        moviesList.textContent = "No movies have been added yet.";
+        return;
+      }
+
+      moviesList.innerHTML = "";
+
+      data.forEach(function(movie) {
+        const item = document.createElement("div");
+        item.className = "movie";
+
+        const title = document.createElement("strong");
+        title.textContent = movie.title;
+
+        const details = document.createElement("p");
+        details.className = "muted";
+
+        const parts = [movie.category];
+
+        if (movie.release_year) {
+          parts.push(String(movie.release_year));
+        }
+
+        details.textContent = parts.join(" • ");
+
+        const description = document.createElement("p");
+        description.className = "muted";
+        description.textContent = movie.description || "No description";
+
+        const editButton = document.createElement("button");
+        editButton.className = "secondary";
+        editButton.textContent = "Edit";
+
+        editButton.addEventListener("click", function() {
+          document.getElementById("movieId").value = movie.id;
+          document.getElementById("title").value = movie.title || "";
+          document.getElementById("youtubeUrl").value =
+            movie.youtube_url || "";
+          document.getElementById("category").value =
+            movie.category || "Hollywood";
+          document.getElementById("description").value =
+            movie.description || "";
+          document.getElementById("releaseYear").value =
+            movie.release_year || "";
+          document.getElementById("posterUrl").value =
+            movie.poster_url || "";
+
+          document.getElementById("saveButton").textContent =
+            "Save Changes";
+
+          status.textContent = "Editing: " + movie.title;
+
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "primary";
+        deleteButton.textContent = "Delete";
+
+        deleteButton.addEventListener("click", async function() {
+          const confirmed = window.confirm(
+            'Are you sure you want to delete "' +
+            movie.title + '"?'
+          );
+
+          if (!confirmed) {
+            return;
+          }
+
+          const { error } = await db
+            .from("movies")
+            .delete()
+            .eq("id", movie.id);
+
+          if (error) {
+            showMessage(
+              status,
+              "Could not delete movie: " + error.message,
+              true
+            );
+            return;
+          }
+
+          showMessage(status, "Movie deleted successfully.");
+          await loadMovies();
+        });
+
+        item.appendChild(title);
+        item.appendChild(details);
+        item.appendChild(description);
+        item.appendChild(editButton);
+        item.appendChild(deleteButton);
+
+        moviesList.appendChild(item);
+      });
     }
 
-    function clearForm() {
-      document.getElementById("movieId").value = "";
-      document.getElementById("title").value = "";
-      document.getElementById("youtubeUrl").value = "";
-      document.getElementById("category").value = "Indian Cinema";
-      document.getElementById("saveBtn").textContent = "Add Movie";
-    }
+    document.getElementById("refreshButton").addEventListener(
+      "click",
+      loadMovies
+    );
 
-    async function logout() {
-      await db.auth.signOut();
+    document.getElementById("logoutButton").addEventListener(
+      "click",
+      async function() {
+        await db.auth.signOut();
+        showLoggedOut();
+      }
+    );
 
-      currentUser = null;
+    db.auth.onAuthStateChange(function(event, session) {
+      if (!session) {
+        showLoggedOut();
+      }
+    });
 
-      document.getElementById("dashboard").classList.add("hidden");
-      document.getElementById("loginBox").classList.remove("hidden");
-
-      document.getElementById("password").value = "";
-      document.getElementById("loginMessage").textContent = "";
-      showMessage("");
-    }
-
-    async function restoreSession() {
-      const { data, error } = await db.auth.getSession();
-
-      if (error || !data.session) return;
-
-      currentUser = data.session.user;
-
-      document.getElementById("loginBox").classList.add("hidden");
-      document.getElementById("dashboard").classList.remove("hidden");
-
-      await loadMovies();
-    }
-
-    restoreSession();
+    checkAdmin();
   </script>
-
 </body>
 </html>
