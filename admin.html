@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChrisFlix Admin Dashboard</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #101010;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+
+    h1 {
+      color: #e50914;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 650px;
+      margin: 30px auto;
+      padding: 22px;
+      background: #202020;
+      border-radius: 12px;
+    }
+
+    input, button, select {
+      width: 100%;
+      padding: 13px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    input, select {
+      background: #333;
+      color: white;
+    }
+
+    button {
+      background: #e50914;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .secondary {
+      background: #444;
+    }
+
+    .movie {
+      background: #303030;
+      padding: 15px;
+      margin-top: 12px;
+      border-radius: 8px;
+      overflow-wrap: anywhere;
+    }
+
+    .movie button {
+      width: 48%;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #message, #loginMessage {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      color: #ffd166;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>🎬 ChrisFlix Admin</h1>
+
+  <div class="container" id="loginBox">
+    <h2>Admin Login</h2>
+
+    <input
+      type="email"
+      id="email"
+      placeholder="Admin email"
+      autocomplete="username"
+    >
+
+    <input
+      type="password"
+      id="password"
+      placeholder="Admin password"
+      autocomplete="current-password"
+    >
+
+    <button id="loginBtn" onclick="login()">Login</button>
+
+    <p id="loginMessage"></p>
+  </div>
+
+  <div class="container hidden" id="dashboard">
+
+    <h2>Manage Movies</h2>
+
+    <p>Add, edit, and delete movies in your collection.</p>
+
+    <input type="hidden" id="movieId">
+
+    <input
+      type="text"
+      id="title"
+      placeholder="Movie title"
+    >
+
+    <input
+      type="url"
+      id="youtubeUrl"
+      placeholder="YouTube video URL"
+    >
+
+    <select id="category">
+      <option value="Indian Cinema">Indian Cinema</option>
+      <option value="Nollywood">Nollywood</option>
+      <option value="Hollywood">Hollywood</option>
+      <option value="Action">Action</option>
+      <option value="Comedy">Comedy</option>
+      <option value="Drama">Drama</option>
+      <option value="Romance">Romance</option>
+      <option value="Animation">Animation</option>
+    </select>
+
+    <button id="saveBtn" onclick="saveMovie()">Add Movie</button>
+
+    <button class="secondary" onclick="clearForm()">
+      Clear Form
+    </button>
+
+    <button class="secondary" onclick="logout()">
+      Logout
+    </button>
+
+    <p id="message"></p>
+
+    <hr>
+
+    <h2>Existing Movies</h2>
+
+    <div id="movieList">Loading movies...</div>
+
+  </div>
+
+  <script>
+    // Your Supabase project details
+    const SUPABASE_URL =
+      "https://fkjgfapbqshtbvqsfqok.supabase.co";
+
+    const SUPABASE_PUBLISHABLE_KEY =
+      "sb_publishable_aiT_SYadkUUPpEwLaZtJFQ_0tFeb0sf";
+
+    const db = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY
+    );
+
+    let currentUser = null;
+
+    function showMessage(message) {
+      document.getElementById("message").textContent = message;
+    }
+
+    async function login() {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const button = document.getElementById("loginBtn");
+      const message = document.getElementById("loginMessage");
+
+      if (!email || !password) {
+        message.textContent = "Enter your admin email and password.";
+        return;
+      }
+
+      button.disabled = true;
+      message.textContent = "Logging in...";
+
+      try {
+        const { data, error } = await db.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        if (error) throw error;
+
+        currentUser = data.user;
+
+        document.getElementById("loginBox").classList.add("hidden");
+        document.getElementById("dashboard").classList.remove("hidden");
+
+        await loadMovies();
+
+      } catch (error) {
+        message.textContent = "Login failed: " + error.message;
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function loadMovies() {
+      const list = document.getElementById("movieList");
+      list.textContent = "Loading movies...";
+
+      const { data, error } = await db
+        .from("movies")
+        .select("id, title, youtube_url, category")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        list.textContent =
+          "Could not load movies: " + error.message;
+        return;
+      }
+
+      list.replaceChildren();
+
+      if (!data || data.length === 0) {
+        list.textContent = "No movies found yet.";
+        return;
+      }
+
+      data.forEach(movie => {
+        const card = document.createElement("div");
+        card.className = "movie";
+
+        const title = document.createElement("h3");
+        title.textContent = movie.title;
+
+        const category = document.createElement("p");
+        category.textContent = "Category: " + movie.category;
+
+        const url = document.createElement("p");
+        url.textContent = movie.youtube_url;
+
+        const edit = document.createElement("button");
+        edit.textContent = "Edit";
+        edit.onclick = () => editMovie(movie);
+
+        const remove = document.createElement("button");
+        remove.textContent = "Delete";
+        remove.onclick = () => deleteMovie(movie.id, movie.title);
+
+        card.append(title, category, url, edit, remove);
+        list.appendChild(card);
+      });
+    }
+
+    async function saveMovie() {
+      if (!currentUser) {
+        showMessage("Please log in first.");
+        return;
+      }
+
+      const id = document.getElementById("movieId").value;
+      const title = document.getElementById("title").value.trim();
+      const youtube_url =
+        document.getElementById("youtubeUrl").value.trim();
+      const category = document.getElementById("category").value;
+      const button = document.getElementById("saveBtn");
+
+      if (!title || !youtube_url) {
+        showMessage("Enter the movie title and YouTube URL.");
+        return;
+      }
+
+      if (!/^https:\/\/(www\.)?(youtube\.com|youtu\.be)\//i.test(youtube_url)) {
+        showMessage("Please enter a valid YouTube video URL.");
+        return;
+      }
+
+      button.disabled = true;
+      showMessage("Saving movie...");
+
+      try {
+        let result;
+
+        if (id) {
+          result = await db
+            .from("movies")
+            .update({ title, youtube_url, category })
+            .eq("id", id);
+        } else {
+          result = await db
+            .from("movies")
+            .insert([{ title, youtube_url, category }]);
+        }
+
+        if (result.error) throw result.error;
+
+        showMessage(id ? "Movie updated!" : "Movie added!");
+
+        clearForm();
+        await loadMovies();
+
+      } catch (error) {
+        showMessage("Could not save movie: " + error.message);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function editMovie(movie) {
+      document.getElementById("movieId").value = movie.id;
+      document.getElementById("title").value = movie.title;
+      document.getElementById("youtubeUrl").value = movie.youtube_url;
+      document.getElementById("category").value = movie.category;
+
+      document.getElementById("saveBtn").textContent = "Update Movie";
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+
+      showMessage("Edit the details, then tap Update Movie.");
+    }
+
+    async function deleteMovie(id, title) {
+      if (!currentUser) return;
+
+      if (!confirm('Delete "' + title + '"?')) return;
+
+      const { error } = await db
+        .from("movies")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        showMessage("Could not delete movie: " + error.message);
+        return;
+      }
+
+      showMessage("Movie deleted.");
+      await loadMovies();
+    }
+
+    function clearForm() {
+      document.getElementById("movieId").value = "";
+      document.getElementById("title").value = "";
+      document.getElementById("youtubeUrl").value = "";
+      document.getElementById("category").value = "Indian Cinema";
+      document.getElementById("saveBtn").textContent = "Add Movie";
+    }
+
+    async function logout() {
+      await db.auth.signOut();
+
+      currentUser = null;
+
+      document.getElementById("dashboard").classList.add("hidden");
+      document.getElementById("loginBox").classList.remove("hidden");
+
+      document.getElementById("password").value = "";
+      document.getElementById("loginMessage").textContent = "";
+      showMessage("");
+    }
+
+    async function restoreSession() {
+      const { data, error } = await db.auth.getSession();
+
+      if (error || !data.session) return;
+
+      currentUser = data.session.user;
+
+      document.getElementById("loginBox").classList.add("hidden");
+      document.getElementById("dashboard").classList.remove("hidden");
+
+      await loadMovies();
+    }
+
+    restoreSession();
+  </script>
+
+</body>
+</html>
