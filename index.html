@@ -2,849 +2,1324 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="CHRISFLIX — discover movies and entertainment.">
-  <title>CHRISFLIX | Your Entertainment. Your World.</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080808">
+
+  <title>ChrisFlix - Watch Movies</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     :root {
-      --bg: #090b10;
-      --panel: #121722;
-      --panel2: #1a2130;
-      --text: #f7f8fb;
-      --muted: #aab2c2;
-      --accent: #f04452;
-      --line: rgba(255,255,255,.1);
+      --red: #e50914;
+      --bg: #080808;
+      --panel: #181818;
+      --muted: #aaa;
     }
 
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
       background: var(--bg);
-      color: var(--text);
-      font-family: Arial, sans-serif;
+      color: white;
+      font-family: Arial, Helvetica, sans-serif;
     }
 
-    a { color: inherit; text-decoration: none; }
-    button, input { font: inherit; }
+    button, input, select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: .6;
+      cursor: wait;
+    }
 
     .topbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 18px;
-      padding: 18px clamp(16px, 5vw, 64px);
-      background: rgba(9,11,16,.95);
-      border-bottom: 1px solid var(--line);
+      gap: 10px;
+      padding: 16px 5%;
+      background: #080808;
       position: sticky;
       top: 0;
       z-index: 20;
+      border-bottom: 1px solid #252525;
     }
 
-    .brand {
-      font-size: 1.55rem;
+    .logo {
+      color: var(--red);
+      font-size: 27px;
       font-weight: 900;
-      letter-spacing: -.8px;
+      letter-spacing: -1px;
+      text-decoration: none;
     }
 
-    .brand span { color: var(--accent); }
-
-    nav {
-      display: flex;
-      gap: 22px;
-      color: #d9deea;
-      font-size: .92rem;
-    }
-
-    .search input {
-      width: min(24vw, 230px);
-      min-width: 115px;
-      padding: 10px 13px;
-      color: white;
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 999px;
-    }
-
-    .hero {
-      min-height: 460px;
+    .nav-actions {
       display: flex;
       align-items: center;
-      padding: 68px clamp(16px, 7vw, 90px);
-      background:
-        radial-gradient(ellipse at 80% 30%, rgba(240,68,82,.28), transparent 40%),
-        linear-gradient(100deg, #111725, #10131d 55%, #26151c);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .hero::after {
-      content: "C";
-      position: absolute;
-      right: 7%;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: clamp(250px, 36vw, 510px);
-      font-weight: 1000;
-      color: rgba(255,255,255,.035);
-      pointer-events: none;
-    }
-
-    .hero-content {
-      max-width: 650px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .eyebrow {
-      color: #ff9b9f;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      font-size: .75rem;
-      font-weight: 800;
-    }
-
-    h1 {
-      font-size: clamp(2.8rem, 7vw, 5.6rem);
-      line-height: .98;
-      letter-spacing: -3px;
-      margin: 14px 0 18px;
-    }
-
-    .hero p {
-      max-width: 520px;
-      color: #c5cbd7;
-      line-height: 1.7;
-      font-size: 1.05rem;
-    }
-
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 26px;
+      gap: 7px;
     }
 
     .btn {
       border: 0;
-      border-radius: 9px;
-      padding: 13px 19px;
-      font-weight: 800;
-      cursor: pointer;
-      display: inline-flex;
-      gap: 9px;
-      align-items: center;
-      justify-content: center;
+      border-radius: 6px;
+      padding: 11px 14px;
+      font-weight: bold;
     }
 
-    .btn-primary {
-      background: var(--accent);
+    .red {
+      background: var(--red);
       color: white;
     }
 
-    .btn-secondary {
-      background: rgba(255,255,255,.1);
+    .dark {
+      background: #303030;
       color: white;
-      border: 1px solid var(--line);
     }
 
-    main {
-      padding: 34px clamp(16px, 5vw, 64px) 60px;
-    }
-
-    .section-head {
+    .hero {
+      min-height: 310px;
       display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 16px;
-      margin: 14px 0 18px;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 45px 6%;
+      background:
+        linear-gradient(90deg, #080808 0%, #080808dd 45%, #08080855 100%),
+        radial-gradient(ellipse at 80% 30%, #641118, #191010 48%, #080808 80%);
     }
 
-    h2 { margin: 0; font-size: 1.7rem; }
-
-    .section-head p {
-      color: var(--muted);
-      margin: 6px 0 0;
-      font-size: .9rem;
+    .hero-badge {
+      color: #ff555d;
+      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: bold;
+      letter-spacing: 3px;
     }
 
-    .chips {
+    .hero h1 {
+      margin: 14px 0 10px;
+      font-size: clamp(36px, 7vw, 65px);
+      font-weight: 900;
+    }
+
+    .hero p {
+      max-width: 520px;
+      line-height: 1.7;
+      color: #ddd;
+    }
+
+    .controls {
+      padding: 22px 5% 0;
       display: flex;
       flex-wrap: wrap;
-      gap: 9px;
-      margin: 20px 0 26px;
+      gap: 10px;
     }
 
-    .chip {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      color: #d8deea;
-      border-radius: 999px;
-      padding: 9px 14px;
-      cursor: pointer;
-    }
-
-    .chip.active, .chip:hover {
-      background: var(--accent);
-      border-color: var(--accent);
+    .controls input,
+    .controls select,
+    .auth-card input {
+      padding: 12px;
       color: white;
+      background: #171717;
+      border: 1px solid #383838;
+      border-radius: 6px;
     }
 
-    .grid {
+    .controls input {
+      flex: 1;
+      min-width: 180px;
+    }
+
+    .controls select {
+      max-width: 100%;
+    }
+
+    .section {
+      padding: 26px 5%;
+    }
+
+    .section h2 {
+      font-size: 22px;
+      margin: 0 0 18px;
+    }
+
+    .movie-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0,1fr));
-      gap: 18px;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 20px 14px;
     }
 
     .movie-card {
       min-width: 0;
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 13px;
-      overflow: hidden;
+      cursor: pointer;
       transition: transform .2s;
     }
 
-    .movie-card:hover { transform: translateY(-4px); }
-
-    .poster {
-      height: 220px;
-      display: flex;
-      align-items: end;
-      padding: 15px;
-      position: relative;
-      overflow: hidden;
-      background: linear-gradient(145deg, #273c58, #111522 75%);
-      isolation: isolate;
+    .movie-card:hover {
+      transform: scale(1.025);
     }
 
-    .poster::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(
-        0deg,
-        rgba(0,0,0,.88) 0%,
-        rgba(0,0,0,.15) 75%,
-        transparent 100%
-      );
-      z-index: 1;
-      pointer-events: none;
+    .poster {
+      width: 100%;
+      aspect-ratio: 2 / 3;
+      background: linear-gradient(145deg, #421218, #171717 70%);
+      border-radius: 9px;
+      overflow: hidden;
     }
 
     .poster img {
-      position: absolute;
-      inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center;
-      z-index: 0;
+      display: block;
     }
 
-    .poster strong {
-      position: relative;
-      z-index: 2;
-      font-size: 1.15rem;
-      overflow-wrap: anywhere;
-      text-shadow: 0 2px 8px rgba(0,0,0,.8);
-    }
-
-    .poster.red { background: linear-gradient(145deg, #6d1e2b, #17131e 75%); }
-    .poster.gold { background: linear-gradient(145deg, #85602c, #191620 75%); }
-    .poster.blue { background: linear-gradient(145deg, #1e5c70, #101722 75%); }
-    .poster.purple { background: linear-gradient(145deg, #533c83, #171321 75%); }
-    .poster.green { background: linear-gradient(145deg, #245b48, #101b1b 75%); }
-    .poster.orange { background: linear-gradient(145deg, #9a4927, #20151b 75%); }
-
-    .movie-info { padding: 14px; }
-
-    .movie-info h3 {
-      margin: 0 0 10px;
-      font-size: 1rem;
-      overflow-wrap: anywhere;
-    }
-
-    .meta {
-      color: var(--muted);
-      font-size: .82rem;
-    }
-
-    .movie-info button {
-      margin-top: 13px;
+    .poster-placeholder {
       width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      text-align: center;
+      overflow-wrap: anywhere;
+      font-weight: bold;
+    }
+
+    .movie-card h3 {
+      margin: 10px 0 5px;
+      font-size: 15px;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+
+    .movie-meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
     }
 
     .empty {
-      display: none;
-      padding: 25px;
       color: var(--muted);
-      text-align: center;
-      border: 1px dashed var(--line);
+      padding: 20px 0;
+      line-height: 1.7;
+    }
+
+    .auth-card {
+      margin: 25px 5%;
+      padding: 22px;
       border-radius: 12px;
-    }
-
-    .news-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0,1fr));
-      gap: 16px;
-      margin-top: 18px;
-    }
-
-    .news-card {
       background: var(--panel);
-      padding: 20px;
-      border: 1px solid var(--line);
-      border-radius: 12px;
+      border: 1px solid #303030;
     }
 
-    .news-card .tag {
-      color: #ff9b9f;
-      text-transform: uppercase;
-      font-size: .72rem;
-      font-weight: 800;
+    .auth-card h2 {
+      margin-top: 0;
     }
 
-    .news-card h3 { margin: 10px 0; }
-
-    .news-card p {
-      color: var(--muted);
-      line-height: 1.6;
-      font-size: .92rem;
+    .auth-card input {
+      display: block;
+      width: 100%;
+      margin: 12px 0;
     }
 
-    .notice {
-      margin-top: 28px;
-      padding: 16px 18px;
-      border-radius: 10px;
-      background: rgba(240,68,82,.08);
-      border: 1px solid rgba(240,68,82,.25);
-      color: #d6dbe5;
-      line-height: 1.55;
-      font-size: .88rem;
+    .auth-card p {
+      color: #bbb;
+      font-size: 14px;
+      line-height: 1.7;
+      overflow-wrap: anywhere;
     }
 
-    footer {
-      padding: 26px clamp(16px, 5vw, 64px);
-      border-top: 1px solid var(--line);
-      color: var(--muted);
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      gap: 14px;
-      font-size: .85rem;
+    #accountArea {
+      display: none;
     }
+
+    #myListSection[hidden] {
+      display: none;
+    }
+
+    .footer {
+      padding: 30px 5%;
+      text-align: center;
+      color: #777;
+      border-top: 1px solid #252525;
+      font-size: 13px;
+    }
+
+    /* Movie details and video player */
 
     .modal {
       display: none;
       position: fixed;
       inset: 0;
-      z-index: 50;
-      padding: 20px;
-      background: rgba(0,0,0,.88);
-      align-items: center;
-      justify-content: center;
+      z-index: 100;
+      overflow-y: auto;
+      background: #000e;
+      padding: 15px;
     }
 
-    .modal.open { display: flex; }
+    .modal.open {
+      display: block;
+    }
 
     .modal-box {
-      width: min(850px, 100%);
-      max-height: 90vh;
-      overflow-y: auto;
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 15px;
-      padding: 22px;
-    }
-
-    .modal-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 15px;
-    }
-
-    .modal-head h2 { font-size: 1.3rem; }
-
-    .close {
-      background: transparent;
-      color: white;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 7px 11px;
-      cursor: pointer;
-    }
-
-    .video-frame {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      background: black;
-      border-radius: 9px;
+      max-width: 850px;
+      margin: 15px auto;
+      background: #151515;
+      border: 1px solid #333;
+      border-radius: 12px;
       overflow: hidden;
     }
 
-    .video-frame iframe {
-      position: absolute;
-      inset: 0;
+    .modal-top {
+      display: flex;
+      justify-content: flex-end;
+      padding: 10px;
+    }
+
+    .close-btn {
+      background: #333;
+      color: white;
+      border: 0;
+      border-radius: 50%;
+      width: 38px;
+      height: 38px;
+      font-size: 22px;
+    }
+
+    .modal-content {
+      padding: 0 20px 25px;
+    }
+
+    .modal-content h2 {
+      font-size: 27px;
+      margin-top: 15px;
+    }
+
+    .modal-content p {
+      line-height: 1.7;
+      color: #ccc;
+      overflow-wrap: anywhere;
+    }
+
+    .player {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: black;
+      position: relative;
+    }
+
+    .player iframe {
       width: 100%;
       height: 100%;
       border: 0;
+      position: absolute;
+      inset: 0;
     }
 
-    .modal-help {
-      color: var(--muted);
-      line-height: 1.6;
-      font-size: .9rem;
+    .player-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 15px;
+    }
+
+    .player-note {
+      color: #999;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .player:fullscreen {
+      width: 100%;
+      height: 100%;
+      aspect-ratio: auto;
+      background: black;
+    }
+
+    .player:fullscreen iframe {
+      width: 100%;
+      height: 100%;
     }
 
     @media (max-width: 850px) {
-      nav { display: none; }
-      .grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
-      .news-grid { grid-template-columns: 1fr; }
-      .poster { height: 190px; }
+      .movie-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
     }
 
-    @media (max-width: 430px) {
-      .topbar { padding: 14px 13px; gap: 10px; }
-      .brand { font-size: 1.25rem; }
-      .search input { width: 115px; min-width: 0; padding: 9px; }
-      .hero { min-height: 430px; padding-top: 52px; padding-bottom: 52px; }
-      h1 { letter-spacing: -1.8px; }
-      .grid { gap: 11px; }
-      .poster { height: 155px; padding: 10px; }
-      .poster strong { font-size: 1rem; }
-      .movie-info { padding: 11px; }
+    @media (max-width: 480px) {
+      .topbar {
+        padding: 13px 4%;
+      }
+
+      .logo {
+        font-size: 22px;
+      }
+
+      .nav-actions {
+        gap: 5px;
+      }
+
+      .btn {
+        padding: 10px;
+        font-size: 12px;
+      }
+
+      .hero {
+        min-height: 260px;
+        padding: 35px 5%;
+      }
+
+      .section {
+        padding-left: 4%;
+        padding-right: 4%;
+      }
+
+      .movie-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px 12px;
+      }
+
+      .modal {
+        padding: 5px;
+      }
+
+      .modal-box {
+        margin: 5px auto;
+      }
+
+      .modal-content {
+        padding: 0 14px 20px;
+      }
     }
   </style>
 </head>
 
 <body>
+
   <header class="topbar">
-    <a class="brand" href="#"><span>CHRIS</span>FLIX</a>
+    <a class="logo" href="/">CHRISFLIX</a>
 
-    <nav aria-label="Main navigation">
-      <a href="#movies">Movies</a>
-      <a href="#downloads">Downloads</a>
-      <a href="#news">Movie News</a>
-    </nav>
-
-    <div class="search">
-      <input id="searchInput" type="search"
-        placeholder="Search movies..." aria-label="Search movies">
+    <div class="nav-actions">
+      <button class="btn dark" id="myListNav">♥ My List</button>
+      <button class="btn red" id="accountNav">Sign In</button>
     </div>
   </header>
 
   <section class="hero">
-    <div class="hero-content">
-      <div class="eyebrow">Your entertainment. Your world.</div>
-      <h1>Big stories.<br>One screen.</h1>
-      <p>Discover films, explore new releases, and catch up on entertainment news — all in one place.</p>
+    <div class="hero-badge">Your Movie Destination</div>
 
-      <div class="actions">
-        <a class="btn btn-primary" href="#movies">▶ Explore Movies</a>
-        <a class="btn btn-secondary" href="#news">Read Movie News</a>
-      </div>
-    </div>
+    <h1>Unlimited Stories.</h1>
+
+    <p>
+      Discover your next favourite movie. Browse our collection,
+      explore movie details, and watch available videos right here
+      on ChrisFlix.
+    </p>
+
+    <button class="btn red" id="exploreBtn">
+      Explore Movies ↓
+    </button>
+  </section>
+
+  <section class="controls">
+    <input
+      id="searchInput"
+      type="search"
+      placeholder="Search movies..."
+      aria-label="Search movies"
+    >
+
+    <select id="categoryFilter" aria-label="Filter by category">
+      <option value="All">All Categories</option>
+      <option value="Indian Cinema">Indian Cinema</option>
+      <option value="Nollywood">Nollywood</option>
+      <option value="Hollywood">Hollywood</option>
+      <option value="Action">Action</option>
+      <option value="Comedy">Comedy</option>
+      <option value="Drama">Drama</option>
+      <option value="Romance">Romance</option>
+      <option value="Animation">Animation</option>
+    </select>
   </section>
 
   <main>
-    <section id="movies">
-      <div class="section-head">
-        <div>
-          <h2>Explore the collection</h2>
-          <p>Discover movies added to ChrisFlix.</p>
-        </div>
-      </div>
+    <section class="section" id="allMoviesSection">
+      <h2>🔥 Discover Movies</h2>
 
-      <div class="chips" id="filters">
-        <button class="chip active" data-filter="All">All</button>
-        <button class="chip" data-filter="Nollywood">Nollywood</button>
-        <button class="chip" data-filter="Hollywood">Hollywood</button>
-        <button class="chip" data-filter="Indian Cinema">Indian Cinema</button>
-        <button class="chip" data-filter="Action">Action</button>
-        <button class="chip" data-filter="Comedy">Comedy</button>
-        <button class="chip" data-filter="Drama">Drama</button>
-        <button class="chip" data-filter="Romance">Romance</button>
-        <button class="chip" data-filter="Animation">Animation</button>
-      </div>
-
-      <p id="databaseMessage" class="modal-help" role="status">Loading movies...</p>
-
-      <div class="grid" id="movieGrid"></div>
-
-      <div class="empty" id="emptyState">
-        No movies match your search. Try another title or category.
+      <div id="movieGrid" class="movie-grid">
+        <p class="empty">Loading movies...</p>
       </div>
     </section>
 
-    <section id="downloads" style="margin-top:54px">
-      <div class="section-head">
-        <div>
-          <h2>Downloads</h2>
-          <p>Download options may be provided for films whose owners permit downloads.</p>
-        </div>
-      </div>
-      <div class="notice">
-        Downloads are not active yet. Only provide downloads for films you own or are authorized to distribute.
-      </div>
+    <section class="section" id="myListSection" hidden>
+      <h2>♥ My List</h2>
+
+      <div id="myListGrid" class="movie-grid"></div>
     </section>
 
-    <section id="news" style="margin-top:54px">
-      <div class="section-head">
-        <div>
-          <h2>Entertainment desk</h2>
-          <p>Entertainment news and updates.</p>
-        </div>
-      </div>
+    <section class="auth-card" id="authArea">
+      <h2>Join ChrisFlix</h2>
 
-      <div class="news-grid">
-        <article class="news-card">
-          <div class="tag">Industry Watch</div>
-          <h3>What makes a great movie night?</h3>
-          <p>Build a watchlist, explore different genres, and share recommendations with friends.</p>
-        </article>
+      <p>
+        Create an account to save your favourite movies.
+        Already have an account? Sign in below.
+      </p>
 
-        <article class="news-card">
-          <div class="tag">Coming Soon</div>
-          <h3>Follow upcoming releases</h3>
-          <p>Keep track of official studio announcements and verified release dates.</p>
-        </article>
+      <form id="authForm">
+        <input
+          id="authEmail"
+          type="email"
+          placeholder="Email address"
+          autocomplete="email"
+          required
+        >
 
-        <article class="news-card">
-          <div class="tag">Behind the Scenes</div>
-          <h3>Discover independent filmmakers</h3>
-          <p>Explore creators who have agreed to share their work with the ChrisFlix audience.</p>
-        </article>
-      </div>
+        <input
+          id="authPassword"
+          type="password"
+          placeholder="Password (at least 6 characters)"
+          autocomplete="current-password"
+          minlength="6"
+          required
+        >
+
+        <button class="btn red" type="submit" id="authSubmit">
+          Sign In
+        </button>
+
+        <button class="btn dark" type="button" id="signupBtn">
+          Create Account
+        </button>
+      </form>
+
+      <p id="authMessage" role="status"></p>
     </section>
 
-    <div class="notice">
-      <strong>ChrisFlix:</strong> Only stream films you own, have licensed, or have permission to share.
-    </div>
+    <section class="auth-card" id="accountArea">
+      <h2>Your Account</h2>
+
+      <p id="accountEmail"></p>
+
+      <button class="btn dark" id="logoutBtn">
+        Sign Out
+      </button>
+    </section>
   </main>
 
-  <footer>
-    <div><strong>CHRISFLIX</strong> · Your Entertainment. Your World.</div>
-    <div>© <span id="year"></span> CHRISFLIX. All rights reserved.</div>
+  <footer class="footer">
+    <p>© <span id="yearNow"></span> ChrisFlix</p>
+    <p>Discover movies. Enjoy the stories.</p>
   </footer>
 
-  <div class="modal" id="watchModal" role="dialog"
-    aria-modal="true" aria-labelledby="modalTitle">
+  <div
+    class="modal"
+    id="movieModal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modalTitle"
+  >
     <div class="modal-box">
-      <div class="modal-head">
-        <h2 id="modalTitle">Watch movie</h2>
-        <button class="close" id="closeModal">Close ✕</button>
+
+      <div class="modal-top">
+        <button
+          class="close-btn"
+          id="closeModal"
+          aria-label="Close movie"
+        >×</button>
       </div>
 
-      <div class="video-frame" id="videoFrame" hidden>
-        <iframe
-          id="moviePlayer"
-          title="Movie player"
-          src="about:blank"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowfullscreen
-          referrerpolicy="strict-origin-when-cross-origin">
-        </iframe>
+      <div class="player" id="playerBox">
+        <div style="
+          height:100%;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          color:#aaa;
+          padding:20px;
+          text-align:center;
+        ">
+          Select Watch Now to load the video.
+        </div>
       </div>
 
-      <p class="modal-help" id="modalHelp">
-        Select a movie to watch.
-      </p>
+      <div class="modal-content">
+        <h2 id="modalTitle">Movie Title</h2>
+
+        <div class="movie-meta" id="modalMeta"></div>
+
+        <p id="modalDescription"></p>
+
+        <div class="player-actions">
+          <button class="btn red" id="watchBtn">
+            ▶ Watch Now
+          </button>
+
+          <button class="btn dark" id="listBtn">
+            ♥ Add to My List
+          </button>
+
+          <button class="btn dark" id="fullscreenBtn">
+            ⛶ Full Screen
+          </button>
+        </div>
+
+        <p class="player-note">
+          To watch sideways, turn off Portrait Orientation Lock
+          in your iPhone Control Centre and rotate your phone.
+          Full-screen rotation depends on your device and browser.
+          Some YouTube videos do not allow embedded playback.
+        </p>
+
+        <p id="playerMessage" role="status"></p>
+      </div>
     </div>
   </div>
 
   <script>
-    const SUPABASE_URL = "https://fkjgfapbqshtbvqsfqok.supabase.co";
-    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_aiT_SYadkUUPpEwLaZtJFQ_0tFeb0sf";
+    "use strict";
+
+    const SUPABASE_URL =
+      "https://fkjgfapbqshtbvqsfqok.supabase.co";
+
+    const SUPABASE_KEY =
+      "sb_publishable_aiT_SYadkUUPpEwLaZtJFQ_0tFeb0sf";
 
     const db = window.supabase.createClient(
       SUPABASE_URL,
-      SUPABASE_PUBLISHABLE_KEY
+      SUPABASE_KEY
     );
 
     const movieGrid = document.getElementById("movieGrid");
-    const searchInput = document.getElementById("searchInput");
-    const emptyState = document.getElementById("emptyState");
-    const databaseMessage = document.getElementById("databaseMessage");
+    const myListGrid = document.getElementById("myListGrid");
+    const modal = document.getElementById("movieModal");
+    const playerBox = document.getElementById("playerBox");
 
-    const modal = document.getElementById("watchModal");
-    const modalTitle = document.getElementById("modalTitle");
-    const modalHelp = document.getElementById("modalHelp");
-    const videoFrame = document.getElementById("videoFrame");
-    const moviePlayer = document.getElementById("moviePlayer");
-
-    let activeFilter = "All";
     let movies = [];
+    let myListIds = new Set();
+    let currentUser = null;
+    let currentMovie = null;
+    let authMode = "signin";
+    let accountRequest = 0;
 
-    const demoMovies = [
-      { id: "demo1", title: "Lagos Sunrise", category: "Nollywood", youtube_url: "" },
-      { id: "demo2", title: "The Last Mission", category: "Action", youtube_url: "" },
-      { id: "demo3", title: "Monsoon Hearts", category: "Indian Cinema", youtube_url: "" },
-      { id: "demo4", title: "Laugh Out Loud", category: "Comedy", youtube_url: "" },
-      { id: "demo5", title: "Shadow City", category: "Hollywood", youtube_url: "" },
-      { id: "demo6", title: "Green Promise", category: "Drama", youtube_url: "" },
-      { id: "demo7", title: "Weekend Hustle", category: "Comedy", youtube_url: "" },
-      { id: "demo8", title: "Royal Promise", category: "Indian Cinema", youtube_url: "" }
-    ];
+    document.getElementById("yearNow").textContent =
+      new Date().getFullYear();
 
-    // Extract the video ID from common YouTube URL formats.
-    function getYouTubeId(url) {
+    function makeElement(tag, className, text) {
+      const element = document.createElement(tag);
+
+      if (className) {
+        element.className = className;
+      }
+
+      if (text !== undefined) {
+        element.textContent = text;
+      }
+
+      return element;
+    }
+
+    function getYouTubeId(value) {
       try {
-        const parsed = new URL(url);
-        const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
+        const url = new URL(value);
+        const host = url.hostname.toLowerCase();
+        let id = "";
 
         if (host === "youtu.be") {
-          return parsed.pathname.split("/").filter(Boolean)[0] || null;
-        }
-
-        if (
+          id = url.pathname.split("/").filter(Boolean)[0] || "";
+        } else if (
           host === "youtube.com" ||
-          host === "m.youtube.com" ||
-          host === "music.youtube.com"
+          host.endsWith(".youtube.com") ||
+          host === "youtube-nocookie.com" ||
+          host.endsWith(".youtube-nocookie.com")
         ) {
-          if (parsed.pathname === "/watch") {
-            return parsed.searchParams.get("v");
-          }
-
-          const parts = parsed.pathname.split("/").filter(Boolean);
-
-          if (
-            ["embed", "shorts", "live"].includes(parts[0]) &&
-            parts[1]
+          if (url.pathname === "/watch") {
+            id = url.searchParams.get("v") || "";
+          } else if (
+            url.pathname.startsWith("/embed/") ||
+            url.pathname.startsWith("/shorts/") ||
+            url.pathname.startsWith("/live/")
           ) {
-            return parts[1];
+            id = url.pathname.split("/")[2] || "";
           }
         }
-      } catch (error) {
+
+        return /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null;
+      } catch {
         return null;
       }
-
-      return null;
     }
 
-    // Build automatic poster URLs from a YouTube video ID.
-    function getYouTubePoster(url) {
-      const videoId = getYouTubeId(url || "");
-
-      if (!videoId) return null;
-
-      return {
-        videoId,
-        max: "https://img.youtube.com/vi/" + encodeURIComponent(videoId) + "/maxresdefault.jpg",
-        high: "https://img.youtube.com/vi/" + encodeURIComponent(videoId) + "/hqdefault.jpg",
-        standard: "https://img.youtube.com/vi/" + encodeURIComponent(videoId) + "/mqdefault.jpg"
-      };
-    }
-
-    function posterColor(category) {
-      const colors = {
-        "Nollywood": "red",
-        "Hollywood": "blue",
-        "Indian Cinema": "gold",
-        "Action": "purple",
-        "Comedy": "orange",
-        "Drama": "green",
-        "Romance": "gold",
-        "Animation": "blue"
-      };
-
-      return colors[category] || "purple";
-    }
-
-    // Try the highest-quality thumbnail first, then fall back to smaller ones.
-    function addPosterImage(poster, movie) {
-      const thumbnail = getYouTubePoster(movie.youtube_url);
-
-      // Optional custom poster URL if one has been saved in the database.
-      const customPoster = typeof movie.poster_url === "string"
-        ? movie.poster_url.trim()
-        : "";
-
-      const imageUrls = [];
-
-      if (customPoster) imageUrls.push(customPoster);
-
-      if (thumbnail) {
-        imageUrls.push(thumbnail.max, thumbnail.high, thumbnail.standard);
+    function getPoster(movie) {
+      if (movie.poster_url) {
+        return movie.poster_url;
       }
 
-      if (!imageUrls.length) return;
+      const id = getYouTubeId(movie.youtube_url || "");
 
-      const img = document.createElement("img");
-      img.alt = movie.title + " poster";
-      img.loading = "lazy";
-      img.decoding = "async";
+      return id
+        ? "https://i.ytimg.com/vi/" + id + "/hqdefault.jpg"
+        : "";
+    }
 
-      let currentIndex = 0;
+    function makeMovieCard(movie) {
+      const card = makeElement("article", "movie-card");
+      const poster = makeElement("div", "poster");
+      const imageUrl = getPoster(movie);
 
-      img.onerror = () => {
-        currentIndex++;
+      if (imageUrl) {
+        const img = document.createElement("img");
 
-        if (currentIndex < imageUrls.length) {
-          img.src = imageUrls[currentIndex];
-        } else {
-          // Hide a broken thumbnail and show the card's background design.
-          img.remove();
-        }
-      };
+        img.src = imageUrl;
+        img.alt = movie.title || "Movie poster";
+        img.loading = "lazy";
 
-      img.src = imageUrls[currentIndex];
-      poster.appendChild(img);
+        img.onerror = function() {
+          poster.replaceChildren(
+            makeElement(
+              "div",
+              "poster-placeholder",
+              movie.title || "ChrisFlix"
+            )
+          );
+        };
+
+        poster.appendChild(img);
+      } else {
+        poster.appendChild(
+          makeElement(
+            "div",
+            "poster-placeholder",
+            movie.title || "ChrisFlix"
+          )
+        );
+      }
+
+      const title = makeElement(
+        "h3",
+        "",
+        movie.title || "Untitled"
+      );
+
+      const metaParts = [];
+
+      if (movie.release_year) {
+        metaParts.push(String(movie.release_year));
+      }
+
+      if (movie.category) {
+        metaParts.push(movie.category);
+      }
+
+      const meta = makeElement(
+        "div",
+        "movie-meta",
+        metaParts.join(" • ")
+      );
+
+      card.append(poster, title, meta);
+
+      card.addEventListener("click", function() {
+        openMovie(movie);
+      });
+
+      return card;
     }
 
     function renderMovies() {
-      const query = searchInput.value.trim().toLowerCase();
+      const query = document.getElementById("searchInput")
+        .value.trim().toLowerCase();
 
-      const filtered = movies.filter(movie => {
-        const text = (
-          (movie.title || "") + " " + (movie.category || "")
-        ).toLowerCase();
+      const category =
+        document.getElementById("categoryFilter").value;
 
-        const matchesSearch = text.includes(query);
-        const matchesCategory =
-          activeFilter === "All" || movie.category === activeFilter;
+      const filtered = movies.filter(function(movie) {
+        const searchable = [
+          movie.title,
+          movie.description,
+          movie.category,
+          movie.release_year
+        ].join(" ").toLowerCase();
 
-        return matchesSearch && matchesCategory;
+        return searchable.includes(query) &&
+          (category === "All" || movie.category === category);
       });
 
       movieGrid.replaceChildren();
 
-      filtered.forEach(movie => {
-        const card = document.createElement("article");
-        card.className = "movie-card";
+      if (filtered.length === 0) {
+        movieGrid.appendChild(
+          makeElement(
+            "p",
+            "empty",
+            movies.length
+              ? "No movies match your search."
+              : "No movies have been added yet. Check back soon!"
+          )
+        );
+      } else {
+        filtered.forEach(function(movie) {
+          movieGrid.appendChild(makeMovieCard(movie));
+        });
+      }
 
-        const poster = document.createElement("div");
-        poster.className = "poster " + posterColor(movie.category);
-
-        // Automatically display the YouTube thumbnail when available.
-        addPosterImage(poster, movie);
-
-        const posterTitle = document.createElement("strong");
-        posterTitle.textContent = movie.title || "Untitled movie";
-        poster.appendChild(posterTitle);
-
-        const info = document.createElement("div");
-        info.className = "movie-info";
-
-        const title = document.createElement("h3");
-        title.textContent = movie.title || "Untitled movie";
-
-        const meta = document.createElement("div");
-        meta.className = "meta";
-        meta.textContent = movie.category || "Uncategorized";
-
-        const watchButton = document.createElement("button");
-        watchButton.className = "btn btn-primary";
-        watchButton.textContent = "▶ Watch";
-        watchButton.addEventListener("click", () => openMovie(movie));
-
-        info.append(title, meta, watchButton);
-        card.append(poster, info);
-        movieGrid.appendChild(card);
-      });
-
-      emptyState.style.display = filtered.length ? "none" : "block";
+      renderMyList();
     }
 
     async function loadMovies() {
-      databaseMessage.textContent = "Loading movies...";
+      movieGrid.replaceChildren(
+        makeElement("p", "empty", "Loading movies...")
+      );
 
-      try {
-        const { data, error } = await db
-          .from("movies")
-          .select("id, title, youtube_url, category, created_at, poster_url")
-          .order("created_at", { ascending: false });
+      const { data, error } = await db
+        .from("movies")
+        .select(
+          "id,title,youtube_url,category,description,release_year,poster_url"
+        )
+        .order("created_at", { ascending: false });
 
-        if (error) throw error;
+      if (error) {
+        movieGrid.replaceChildren(
+          makeElement(
+            "p",
+            "empty",
+            "Couldn't load movies. Please refresh the page."
+          )
+        );
 
-        if (data && data.length > 0) {
-          movies = data;
-          databaseMessage.textContent = "Movies from ChrisFlix.";
-        } else {
-          movies = demoMovies;
-          databaseMessage.textContent =
-            "Your collection is empty. Add a movie through the admin dashboard to get started.";
-        }
-
-        renderMovies();
-
-      } catch (error) {
-        console.error("Could not load movies:", error);
-
-        movies = demoMovies;
-        renderMovies();
-
-        databaseMessage.textContent =
-          "Could not connect to the movie database. Showing demo movies. " +
-          (error.message || "");
+        console.error("Movie loading error:", error.message);
+        return;
       }
+
+      movies = data || [];
+      renderMovies();
     }
 
     function openMovie(movie) {
-      modalTitle.textContent = movie.title || "Watch movie";
+      currentMovie = movie;
 
-      const videoId = getYouTubeId(movie.youtube_url || "");
+      document.getElementById("modalTitle").textContent =
+        movie.title || "Untitled";
 
-      if (videoId) {
-        moviePlayer.src =
-          "https://www.youtube-nocookie.com/embed/" +
-          encodeURIComponent(videoId) +
-          "?autoplay=1&rel=0";
+      const meta = [];
 
-        videoFrame.hidden = false;
-        modalHelp.hidden = true;
-      } else {
-        moviePlayer.src = "about:blank";
-        videoFrame.hidden = true;
-        modalHelp.hidden = false;
-        modalHelp.textContent =
-          "A playable YouTube video has not been added for this demo movie yet.";
+      if (movie.release_year) {
+        meta.push(String(movie.release_year));
       }
 
+      if (movie.category) {
+        meta.push(movie.category);
+      }
+
+      document.getElementById("modalMeta").textContent =
+        meta.join(" • ");
+
+      document.getElementById("modalDescription").textContent =
+        movie.description || "No description available yet.";
+
+      document.getElementById("playerMessage").textContent = "";
+
+      resetPlayer();
+      updateListButton();
+
       modal.classList.add("open");
+      document.body.style.overflow = "hidden";
     }
 
-    function closeModal() {
+    function resetPlayer() {
+      playerBox.replaceChildren();
+
+      const placeholder = makeElement(
+        "div",
+        "",
+        "Press Watch Now to play this movie."
+      );
+
+      placeholder.style.cssText =
+        "height:100%;display:flex;align-items:center;" +
+        "justify-content:center;color:#aaa;padding:20px;" +
+        "text-align:center";
+
+      playerBox.appendChild(placeholder);
+    }
+
+    function closeMovie() {
       modal.classList.remove("open");
-      moviePlayer.src = "about:blank";
-      videoFrame.hidden = true;
-      modalHelp.hidden = false;
+      document.body.style.overflow = "";
+
+      resetPlayer();
+      currentMovie = null;
     }
 
-    searchInput.addEventListener("input", renderMovies);
+    function playMovie() {
+      if (!currentMovie) {
+        return;
+      }
 
-    document.querySelectorAll(".chip").forEach(chip => {
-      chip.addEventListener("click", () => {
-        document.querySelectorAll(".chip").forEach(item => {
-          item.classList.remove("active");
+      const videoId = getYouTubeId(
+        currentMovie.youtube_url || ""
+      );
+
+      if (!videoId) {
+        document.getElementById("playerMessage").textContent =
+          "This movie has an invalid YouTube link.";
+        return;
+      }
+
+      playerBox.replaceChildren();
+
+      const iframe = document.createElement("iframe");
+
+      iframe.src =
+        "https://www.youtube-nocookie.com/embed/" +
+        videoId +
+        "?autoplay=1&rel=0&playsinline=1";
+
+      iframe.title = currentMovie.title || "Movie player";
+
+      iframe.allow =
+        "accelerometer; autoplay; clipboard-write; " +
+        "encrypted-media; gyroscope; picture-in-picture; web-share";
+
+      iframe.setAttribute("allowfullscreen", "");
+      iframe.referrerPolicy = "strict-origin-when-cross-origin";
+
+      playerBox.appendChild(iframe);
+
+      document.getElementById("playerMessage").textContent =
+        "If playback fails, the video owner may have disabled embedding.";
+    }
+
+    async function loadMyList() {
+      myListIds = new Set();
+
+      if (!currentUser) {
+        renderMyList();
+        updateListButton();
+        return;
+      }
+
+      const userId = currentUser.id;
+
+      const { data, error } = await db
+        .from("watchlist")
+        .select("movie_id")
+        .eq("user_id", userId);
+
+      if (error) {
+        console.error("Watchlist error:", error.message);
+
+        document.getElementById("authMessage").textContent =
+          "Your account is signed in, but My List couldn't load.";
+
+        renderMyList();
+        return;
+      }
+
+      // Do not apply an old result to a different account.
+      if (!currentUser || currentUser.id !== userId) {
+        return;
+      }
+
+      (data || []).forEach(function(item) {
+        myListIds.add(item.movie_id);
+      });
+
+      renderMyList();
+      updateListButton();
+    }
+
+    function renderMyList() {
+      myListGrid.replaceChildren();
+
+      if (!currentUser) {
+        myListGrid.appendChild(
+          makeElement(
+            "p",
+            "empty",
+            "Sign in to save your favourite movies."
+          )
+        );
+        return;
+      }
+
+      const savedMovies = movies.filter(function(movie) {
+        return myListIds.has(movie.id);
+      });
+
+      if (savedMovies.length === 0) {
+        myListGrid.appendChild(
+          makeElement(
+            "p",
+            "empty",
+            "Your list is empty. Open a movie and tap Add to My List."
+          )
+        );
+        return;
+      }
+
+      savedMovies.forEach(function(movie) {
+        myListGrid.appendChild(makeMovieCard(movie));
+      });
+    }
+
+    function updateListButton() {
+      const button = document.getElementById("listBtn");
+
+      if (!currentMovie) {
+        button.textContent = "♥ Add to My List";
+        return;
+      }
+
+      button.textContent = myListIds.has(currentMovie.id)
+        ? "♥ Remove from My List"
+        : "♥ Add to My List";
+    }
+
+    async function toggleMyList() {
+      if (!currentUser) {
+        document.getElementById("authMessage").textContent =
+          "Please sign in or create an account to use My List.";
+
+        document.getElementById("authArea").scrollIntoView({
+          behavior: "smooth"
         });
 
-        chip.classList.add("active");
-        activeFilter = chip.dataset.filter;
-        renderMovies();
+        return;
+      }
+
+      if (!currentMovie) {
+        return;
+      }
+
+      const userId = currentUser.id;
+      const movieId = currentMovie.id;
+      const button = document.getElementById("listBtn");
+
+      button.disabled = true;
+
+      try {
+        if (myListIds.has(movieId)) {
+          const { error } = await db
+            .from("watchlist")
+            .delete()
+            .eq("user_id", userId)
+            .eq("movie_id", movieId);
+
+          if (error) {
+            throw error;
+          }
+
+          myListIds.delete(movieId);
+        } else {
+          const { error } = await db
+            .from("watchlist")
+            .insert({
+              user_id: userId,
+              movie_id: movieId
+            });
+
+          if (error) {
+            throw error;
+          }
+
+          myListIds.add(movieId);
+        }
+
+        document.getElementById("playerMessage").textContent =
+          myListIds.has(movieId)
+            ? "Movie added to My List! ❤️"
+            : "Movie removed from My List.";
+      } catch (error) {
+        console.error("My List error:", error.message);
+
+        document.getElementById("playerMessage").textContent =
+          "Couldn't update My List. Please try again.";
+      } finally {
+        button.disabled = false;
+        updateListButton();
+        renderMyList();
+      }
+    }
+
+    async function refreshAccount(session) {
+      const requestId = ++accountRequest;
+
+      currentUser = session ? session.user : null;
+      myListIds = new Set();
+
+      const authArea = document.getElementById("authArea");
+      const accountArea = document.getElementById("accountArea");
+      const accountNav = document.getElementById("accountNav");
+
+      if (currentUser) {
+        authArea.style.display = "none";
+        accountArea.style.display = "block";
+
+        document.getElementById("accountEmail").textContent =
+          "Signed in as " + (currentUser.email || "");
+
+        accountNav.textContent = "My Account";
+
+        renderMyList();
+        updateListButton();
+
+        await loadMyList();
+
+        if (requestId !== accountRequest) {
+          return;
+        }
+      } else {
+        authArea.style.display = "block";
+        accountArea.style.display = "none";
+
+        accountNav.textContent = "Sign In";
+
+        renderMyList();
+        updateListButton();
+      }
+    }
+
+    async function signIn() {
+      const email = document.getElementById("authEmail")
+        .value.trim();
+
+      const password =
+        document.getElementById("authPassword").value;
+
+      const { error } = await db.auth.signInWithPassword({
+        email,
+        password
       });
+
+      if (error) {
+        document.getElementById("authMessage").textContent =
+          error.message;
+        return;
+      }
+
+      document.getElementById("authMessage").textContent =
+        "Signed in successfully!";
+    }
+
+    async function signUp() {
+      const email = document.getElementById("authEmail")
+        .value.trim();
+
+      const password =
+        document.getElementById("authPassword").value;
+
+      const { data, error } = await db.auth.signUp({
+        email,
+        password
+      });
+
+      if (error) {
+        document.getElementById("authMessage").textContent =
+          error.message;
+        return;
+      }
+
+      if (data.session) {
+        document.getElementById("authMessage").textContent =
+          "Your account has been created successfully!";
+      } else {
+        document.getElementById("authMessage").textContent =
+          "Account created! Check your email to confirm your account, " +
+          "then sign in.";
+      }
+    }
+
+    document.getElementById("authForm").addEventListener(
+      "submit",
+      async function(event) {
+        event.preventDefault();
+
+        const submitButton =
+          document.getElementById("authSubmit");
+
+        submitButton.disabled = true;
+
+        document.getElementById("authMessage").textContent =
+          "Please wait...";
+
+        try {
+          if (authMode === "signup") {
+            await signUp();
+          } else {
+            await signIn();
+          }
+        } catch (error) {
+          document.getElementById("authMessage").textContent =
+            "Something went wrong. Please try again.";
+        } finally {
+          submitButton.disabled = false;
+        }
+      }
+    );
+
+    document.getElementById("signupBtn").addEventListener(
+      "click",
+      function() {
+        if (authMode === "signin") {
+          authMode = "signup";
+
+          document.getElementById("authSubmit").textContent =
+            "Sign Up";
+
+          document.getElementById("signupBtn").textContent =
+            "Switch to Sign In";
+
+          document.getElementById("authMessage").textContent =
+            "Enter your email and choose a password.";
+        } else {
+          authMode = "signin";
+
+          document.getElementById("authSubmit").textContent =
+            "Sign In";
+
+          document.getElementById("signupBtn").textContent =
+            "Create Account";
+
+          document.getElementById("authMessage").textContent = "";
+        }
+      }
+    );
+
+    document.getElementById("logoutBtn").addEventListener(
+      "click",
+      async function() {
+        const { error } = await db.auth.signOut();
+
+        if (error) {
+          document.getElementById("authMessage").textContent =
+            error.message;
+        } else {
+          document.getElementById("authMessage").textContent =
+            "You have signed out.";
+        }
+      }
+    );
+
+    document.getElementById("myListNav").addEventListener(
+      "click",
+      function() {
+        document.getElementById("myListSection").hidden = false;
+
+        document.getElementById("myListSection").scrollIntoView({
+          behavior: "smooth"
+        });
+      }
+    );
+
+    document.getElementById("accountNav").addEventListener(
+      "click",
+      function() {
+        const target = currentUser
+          ? document.getElementById("accountArea")
+          : document.getElementById("authArea");
+
+        target.scrollIntoView({
+          behavior: "smooth"
+        });
+      }
+    );
+
+    document.getElementById("exploreBtn").addEventListener(
+      "click",
+      function() {
+        document.getElementById("allMoviesSection").scrollIntoView({
+          behavior: "smooth"
+        });
+      }
+    );
+
+    document.getElementById("searchInput").addEventListener(
+      "input",
+      renderMovies
+    );
+
+    document.getElementById("categoryFilter").addEventListener(
+      "change",
+      renderMovies
+    );
+
+    document.getElementById("closeModal").addEventListener(
+      "click",
+      closeMovie
+    );
+
+    modal.addEventListener("click", function(event) {
+      if (event.target === modal) {
+        closeMovie();
+      }
     });
 
-    document.getElementById("closeModal").addEventListener("click", closeModal);
+    document.getElementById("watchBtn").addEventListener(
+      "click",
+      playMovie
+    );
 
-    modal.addEventListener("click", event => {
-      if (event.target === modal) closeModal();
+    document.getElementById("listBtn").addEventListener(
+      "click",
+      toggleMyList
+    );
+
+    document.getElementById("fullscreenBtn").addEventListener(
+      "click",
+      async function() {
+        try {
+          if (document.fullscreenElement) {
+            await document.exitFullscreen();
+          } else if (playerBox.requestFullscreen) {
+            await playerBox.requestFullscreen();
+          } else {
+            document.getElementById("playerMessage").textContent =
+              "Use the fullscreen button inside the video player.";
+          }
+        } catch (error) {
+          document.getElementById("playerMessage").textContent =
+            "Please use the fullscreen control inside the video player.";
+        }
+      }
+    );
+
+    document.addEventListener("keydown", function(event) {
+      if (
+        event.key === "Escape" &&
+        modal.classList.contains("open")
+      ) {
+        closeMovie();
+      }
     });
 
-    document.addEventListener("keydown", event => {
-      if (event.key === "Escape") closeModal();
+    db.auth.onAuthStateChange(function(event, session) {
+      void refreshAccount(session);
     });
 
-    document.getElementById("year").textContent = new Date().getFullYear();
+    async function startApp() {
+      const { data, error } = await db.auth.getSession();
 
-    loadMovies();
+      if (error) {
+        console.error("Session error:", error.message);
+      }
+
+      await refreshAccount(data ? data.session : null);
+      await loadMovies();
+    }
+
+    startApp();
   </script>
+
 </body>
 </html>
