@@ -219,20 +219,39 @@
       position: relative;
       overflow: hidden;
       background: linear-gradient(145deg, #273c58, #111522 75%);
+      isolation: isolate;
     }
 
     .poster::before {
       content: "";
       position: absolute;
       inset: 0;
-      background: linear-gradient(0deg, rgba(0,0,0,.8), transparent 80%);
+      background: linear-gradient(
+        0deg,
+        rgba(0,0,0,.88) 0%,
+        rgba(0,0,0,.15) 75%,
+        transparent 100%
+      );
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .poster img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      z-index: 0;
     }
 
     .poster strong {
       position: relative;
-      z-index: 1;
+      z-index: 2;
       font-size: 1.15rem;
       overflow-wrap: anywhere;
+      text-shadow: 0 2px 8px rgba(0,0,0,.8);
     }
 
     .poster.red { background: linear-gradient(145deg, #6d1e2b, #17131e 75%); }
@@ -335,6 +354,8 @@
 
     .modal-box {
       width: min(850px, 100%);
+      max-height: 90vh;
+      overflow-y: auto;
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 15px;
@@ -415,7 +436,8 @@
     </nav>
 
     <div class="search">
-      <input id="searchInput" type="search" placeholder="Search movies..." aria-label="Search movies">
+      <input id="searchInput" type="search"
+        placeholder="Search movies..." aria-label="Search movies">
     </div>
   </header>
 
@@ -513,7 +535,8 @@
     <div>© <span id="year"></span> CHRISFLIX. All rights reserved.</div>
   </footer>
 
-  <div class="modal" id="watchModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal" id="watchModal" role="dialog"
+    aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-box">
       <div class="modal-head">
         <h2 id="modalTitle">Watch movie</h2>
@@ -571,6 +594,7 @@
       { id: "demo8", title: "Royal Promise", category: "Indian Cinema", youtube_url: "" }
     ];
 
+    // Extract the video ID from common YouTube URL formats.
     function getYouTubeId(url) {
       try {
         const parsed = new URL(url);
@@ -605,6 +629,20 @@
       return null;
     }
 
+    // Build automatic poster URLs from a YouTube video ID.
+    function getYouTubePoster(url) {
+      const videoId = getYouTubeId(url || "");
+
+      if (!videoId) return null;
+
+      return {
+        videoId,
+        max: "https://img.youtube.com/vi/" + encodeURIComponent(videoId) + "/maxresdefault.jpg",
+        high: "https://img.youtube.com/vi/" + encodeURIComponent(videoId) + "/hqdefault.jpg",
+        standard: "https://img.youtube.com/vi/" + encodeURIComponent(videoId) + "/mqdefault.jpg"
+      };
+    }
+
     function posterColor(category) {
       const colors = {
         "Nollywood": "red",
@@ -620,11 +658,55 @@
       return colors[category] || "purple";
     }
 
+    // Try the highest-quality thumbnail first, then fall back to smaller ones.
+    function addPosterImage(poster, movie) {
+      const thumbnail = getYouTubePoster(movie.youtube_url);
+
+      // Optional custom poster URL if one has been saved in the database.
+      const customPoster = typeof movie.poster_url === "string"
+        ? movie.poster_url.trim()
+        : "";
+
+      const imageUrls = [];
+
+      if (customPoster) imageUrls.push(customPoster);
+
+      if (thumbnail) {
+        imageUrls.push(thumbnail.max, thumbnail.high, thumbnail.standard);
+      }
+
+      if (!imageUrls.length) return;
+
+      const img = document.createElement("img");
+      img.alt = movie.title + " poster";
+      img.loading = "lazy";
+      img.decoding = "async";
+
+      let currentIndex = 0;
+
+      img.onerror = () => {
+        currentIndex++;
+
+        if (currentIndex < imageUrls.length) {
+          img.src = imageUrls[currentIndex];
+        } else {
+          // Hide a broken thumbnail and show the card's background design.
+          img.remove();
+        }
+      };
+
+      img.src = imageUrls[currentIndex];
+      poster.appendChild(img);
+    }
+
     function renderMovies() {
       const query = searchInput.value.trim().toLowerCase();
 
       const filtered = movies.filter(movie => {
-        const text = (movie.title + " " + movie.category).toLowerCase();
+        const text = (
+          (movie.title || "") + " " + (movie.category || "")
+        ).toLowerCase();
+
         const matchesSearch = text.includes(query);
         const matchesCategory =
           activeFilter === "All" || movie.category === activeFilter;
@@ -641,19 +723,22 @@
         const poster = document.createElement("div");
         poster.className = "poster " + posterColor(movie.category);
 
+        // Automatically display the YouTube thumbnail when available.
+        addPosterImage(poster, movie);
+
         const posterTitle = document.createElement("strong");
-        posterTitle.textContent = movie.title;
+        posterTitle.textContent = movie.title || "Untitled movie";
         poster.appendChild(posterTitle);
 
         const info = document.createElement("div");
         info.className = "movie-info";
 
         const title = document.createElement("h3");
-        title.textContent = movie.title;
+        title.textContent = movie.title || "Untitled movie";
 
         const meta = document.createElement("div");
         meta.className = "meta";
-        meta.textContent = movie.category;
+        meta.textContent = movie.category || "Uncategorized";
 
         const watchButton = document.createElement("button");
         watchButton.className = "btn btn-primary";
@@ -674,12 +759,10 @@
       try {
         const { data, error } = await db
           .from("movies")
-          .select("id, title, youtube_url, category, created_at")
+          .select("id, title, youtube_url, category, created_at, poster_url")
           .order("created_at", { ascending: false });
 
-        if (error) {
-          throw error;
-        }
+        if (error) throw error;
 
         if (data && data.length > 0) {
           movies = data;
@@ -693,17 +776,19 @@
         renderMovies();
 
       } catch (error) {
+        console.error("Could not load movies:", error);
+
         movies = demoMovies;
         renderMovies();
 
         databaseMessage.textContent =
           "Could not connect to the movie database. Showing demo movies. " +
-          error.message;
+          (error.message || "");
       }
     }
 
     function openMovie(movie) {
-      modalTitle.textContent = movie.title;
+      modalTitle.textContent = movie.title || "Watch movie";
 
       const videoId = getYouTubeId(movie.youtube_url || "");
 
@@ -750,15 +835,11 @@
     document.getElementById("closeModal").addEventListener("click", closeModal);
 
     modal.addEventListener("click", event => {
-      if (event.target === modal) {
-        closeModal();
-      }
+      if (event.target === modal) closeModal();
     });
 
     document.addEventListener("keydown", event => {
-      if (event.key === "Escape") {
-        closeModal();
-      }
+      if (event.key === "Escape") closeModal();
     });
 
     document.getElementById("year").textContent = new Date().getFullYear();
