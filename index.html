@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080808">
+  <meta name="description" content="ChrisFlix — discover movies, explore details, and watch videos available to stream.">
+  <title>ChrisFlix — Watch Movies</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{--red:#e50914;--bg:#080808;--panel:#181818;--muted:#aaa;--line:#303030}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:var(--bg);color:#fff;font-family:Arial,Helvetica,sans-serif}
+    body.modal-open{overflow:hidden}
+    button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.6;cursor:wait}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 5%;background:#080808;position:sticky;top:0;z-index:20;border-bottom:1px solid #252525}
+    .logo{color:var(--red);font-size:27px;font-weight:900;letter-spacing:-1px;text-decoration:none}
+    .nav-actions{display:flex;align-items:center;gap:7px}
+    .btn{border:0;border-radius:6px;padding:11px 14px;font-weight:bold;transition:filter .15s,transform .15s}
+    .btn:hover{filter:brightness(1.12)}.btn:active{transform:scale(.98)}
+    .red{background:var(--red);color:#fff}.dark{background:#303030;color:#fff}
+    .hero{min-height:310px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:45px 6%;background:linear-gradient(90deg,#080808 0%,#080808e8 45%,#08080855 100%),radial-gradient(ellipse at 80% 30%,#641118,#191010 48%,#080808 80%)}
+    .hero-badge{color:#ff555d;text-transform:uppercase;font-size:12px;font-weight:bold;letter-spacing:3px}
+    .hero h1{margin:14px 0 10px;font-size:clamp(36px,7vw,65px);font-weight:900;letter-spacing:-1.5px}
+    .hero p{max-width:520px;line-height:1.7;color:#ddd}
+    .controls{padding:22px 5% 0;display:flex;flex-wrap:wrap;gap:10px}
+    .controls input,.controls select,.auth-card input{padding:12px;color:#fff;background:#171717;border:1px solid #383838;border-radius:6px}
+    .controls input{flex:1;min-width:180px}.controls select{max-width:100%}
+    .section{padding:26px 5%}.section h2{font-size:22px;margin:0 0 18px}
+    .movie-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:20px 14px}
+    .movie-card{min-width:0;cursor:pointer;transition:transform .2s}.movie-card:hover{transform:translateY(-3px)}
+    .poster{width:100%;aspect-ratio:2/3;background:linear-gradient(145deg,#421218,#171717 70%);border-radius:9px;overflow:hidden}
+    .poster img{width:100%;height:100%;object-fit:cover;display:block}
+    .poster-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:12px;text-align:center;overflow-wrap:anywhere;font-weight:bold;color:#ddd;background:linear-gradient(145deg,#421218,#171717 70%)}
+    .movie-card h3{margin:10px 0 5px;font-size:15px;line-height:1.4;overflow-wrap:anywhere}
+    .movie-meta{color:var(--muted);font-size:12px;line-height:1.6}
+    .empty{color:var(--muted);padding:20px 0;line-height:1.7;grid-column:1/-1}
+    .auth-card{margin:25px 5%;padding:22px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
+    .auth-card h2{margin-top:0}.auth-card input{display:block;width:100%;margin:12px 0}.auth-card p{color:#bbb;font-size:14px;line-height:1.7;overflow-wrap:anywhere}
+    #accountArea{display:none}#myListSection[hidden]{display:none}
+    .footer{padding:30px 5%;text-align:center;color:#777;border-top:1px solid #252525;font-size:13px}
+    .modal{display:none;position:fixed;inset:0;z-index:100;overflow-y:auto;background:#000e;padding:15px}
+    .modal.open{display:block}.modal-box{max-width:850px;margin:15px auto;background:#151515;border:1px solid #333;border-radius:12px;overflow:hidden}
+    .modal-top{display:flex;justify-content:flex-end;padding:10px}
+    .close-btn{background:#333;color:#fff;border:0;border-radius:50%;width:38px;height:38px;font-size:22px}
+    .modal-content{padding:0 20px 25px}.modal-content h2{font-size:27px;margin-top:15px}.modal-content p{line-height:1.7;color:#ccc;overflow-wrap:anywhere}
+    .player{width:100%;aspect-ratio:16/9;background:#000;position:relative;display:flex;align-items:center;justify-content:center}
+    .player iframe{width:100%;height:100%;border:0;position:absolute;inset:0}
+    .player-placeholder{color:#aaa;padding:20px;text-align:center;line-height:1.6}
+    .player-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:15px}
+    .player-note{color:#999;font-size:12px;line-height:1.7}
+    .player-message{min-height:1.4em;color:#ffb7ba!important;font-size:13px;margin:10px 0}
+    .player:fullscreen{width:100%;height:100%;aspect-ratio:auto;background:#000}.player:fullscreen iframe{width:100%;height:100%}
+    .related-section{margin-top:28px;border-top:1px solid #303030;padding-top:20px}.related-section h3{margin:0 0 14px;font-size:20px}
+    .related-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .related-card{min-width:0;cursor:pointer;background:#202020;border-radius:8px;overflow:hidden;border:1px solid #303030;transition:transform .2s}
+    .related-card:hover{transform:translateY(-2px)}.related-card .poster{border-radius:0}
+    .related-card h4{margin:8px;font-size:13px;line-height:1.4;overflow-wrap:anywhere}
+    .related-card .movie-meta{padding:0 8px 8px}
+    .related-empty{color:#aaa;font-size:13px;line-height:1.6;grid-column:1/-1}
+    @media(max-width:850px){.movie-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(max-width:480px){
+      .topbar{padding:13px 4%}.logo{font-size:22px}.nav-actions{gap:5px}.btn{padding:10px;font-size:12px}
+      .hero{min-height:260px;padding:35px 5%}.section{padding-left:4%;padding-right:4%}
+      .movie-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px}
+      .modal{padding:5px}.modal-box{margin:5px auto}.modal-content{padding:0 14px 20px}
+      .related-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    }
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important}}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="logo" href="/" aria-label="ChrisFlix home">CHRISFLIX</a>
+    <div class="nav-actions">
+      <button class="btn dark" id="myListNav" type="button">♥ My List</button>
+      <button class="btn red" id="accountNav" type="button">Sign In</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-badge">Your Movie Destination</div>
+    <h1>Unlimited Stories.</h1>
+    <p>Discover your next favourite movie. Browse our collection, explore movie details, and watch videos available to stream on ChrisFlix.</p>
+    <button class="btn red" id="exploreBtn" type="button">Explore Movies ↓</button>
+  </section>
+
+  <section class="controls" aria-label="Movie search and filters">
+    <input id="searchInput" type="search" placeholder="Search movies..." aria-label="Search movies">
+    <select id="categoryFilter" aria-label="Filter by category">
+      <option value="All">All Categories</option><option value="Indian Cinema">Indian Cinema</option>
+      <option value="Nollywood">Nollywood</option><option value="Hollywood">Hollywood</option>
+      <option value="Action">Action</option><option value="Comedy">Comedy</option>
+      <option value="Drama">Drama</option><option value="Romance">Romance</option><option value="Animation">Animation</option>
+    </select>
+  </section>
+
+  <main>
+    <section class="section" id="allMoviesSection">
+      <h2>🔥 Discover Movies</h2>
+      <div id="movieGrid" class="movie-grid"><p class="empty">Loading movies...</p></div>
+    </section>
+    <section class="section" id="myListSection" hidden>
+      <h2>♥ My List</h2><div id="myListGrid" class="movie-grid"></div>
+    </section>
+    <section class="auth-card" id="authArea">
+      <h2>Join ChrisFlix</h2>
+      <p>Create an account to save your favourite movies. Already have an account? Sign in below.</p>
+      <form id="authForm">
+        <input id="authEmail" type="email" placeholder="Email address" autocomplete="email" required>
+        <input id="authPassword" type="password" placeholder="Password (at least 6 characters)" autocomplete="current-password" minlength="6" required>
+        <button class="btn red" type="submit" id="authSubmit">Sign In</button>
+        <button class="btn dark" type="button" id="signupBtn">Create Account</button>
+      </form>
+      <p id="authMessage" role="status" aria-live="polite"></p>
+    </section>
+    <section class="auth-card" id="accountArea">
+      <h2>Your Account</h2><p id="accountEmail"></p><button class="btn dark" id="logoutBtn" type="button">Sign Out</button>
+    </section>
+  </main>
+
+  <footer class="footer"><p>© <span id="yearNow"></span> ChrisFlix</p><p>Discover movies. Enjoy the stories.</p></footer>
+
+  <div class="modal" id="movieModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-hidden="true">
+    <div class="modal-box">
+      <div class="modal-top"><button class="close-btn" id="closeModal" type="button" aria-label="Close movie">×</button></div>
+      <div class="player" id="playerBox"><div class="player-placeholder">Select Watch Now to load the video.</div></div>
+      <div class="modal-content">
+        <h2 id="modalTitle">Movie Title</h2><div class="movie-meta" id="modalMeta"></div>
+        <p id="modalDescription"></p>
+        <div class="player-actions">
+          <button class="btn red" id="watchBtn" type="button">▶ Watch Now</button>
+          <button class="btn dark" id="listBtn" type="button">♥ Add to My List</button>
+          <button class="btn dark" id="fullscreenBtn" type="button">⛶ Full Screen</button>
+        </div>
+        <p class="player-message" id="playerMessage" role="status" aria-live="polite"></p>
+        <p class="player-note">For sideways viewing, turn off Portrait Orientation Lock in your iPhone Control Centre and rotate your phone. Full-screen rotation depends on your device and browser. Some videos do not allow embedded playback.</p>
+        <section class="related-section"><h3>More Like This</h3><div id="relatedMovies" class="related-grid"></div></section>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    "use strict";
+
+    // Supabase publishable/anon key is intended for browser use.
+    // Protect database tables with Row Level Security (RLS) policies.
+    const SUPABASE_URL = "https://fkjgfapbqshtbvqsfqok.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_aiT_SYadkUUPpEwLaZtJFQ_0tFeb0sf";
+
+    const movieGrid = document.getElementById("movieGrid");
+    const myListGrid = document.getElementById("myListGrid");
+    const modal = document.getElementById("movieModal");
+    const playerBox = document.getElementById("playerBox");
+    const relatedMovies = document.getElementById("relatedMovies");
+    const playerMessage = document.getElementById("playerMessage");
+    const db = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let movies = [];
+    let myListIds = new Set();
+    let currentUser = null;
+    let currentMovie = null;
+    let authMode = "signin";
+    let accountRequest = 0;
+    let lastFocusedElement = null;
+
+    document.getElementById("yearNow").textContent = new Date().getFullYear();
+
+    function makeElement(tag, className, text) {
+      const element = document.createElement(tag);
+      if (className) element.className = className;
+      if (text !== undefined) element.textContent = text;
+      return element;
+    }
+
+    function getYouTubeId(value) {
+      try {
+        const url = new URL(value);
+        const host = url.hostname.toLowerCase();
+        let id = "";
+        if (host === "youtu.be") {
+          id = url.pathname.split("/").filter(Boolean)[0] || "";
+        } else if (
+          host === "youtube.com" || host.endsWith(".youtube.com") ||
+          host === "youtube-nocookie.com" || host.endsWith(".youtube-nocookie.com")
+        ) {
+          if (url.pathname === "/watch") id = url.searchParams.get("v") || "";
+          else if (/^\/(embed|shorts|live)\//.test(url.pathname)) id = url.pathname.split("/")[2] || "";
+        }
+        return /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null;
+      } catch {
+        return null;
+      }
+    }
+        function getPoster(movie) {
+      const supplied = typeof movie.poster_url === "string" ? movie.poster_url.trim() : "";
+      if (supplied) return supplied;
+      const id = getYouTubeId(movie.youtube_url || "");
+      return id ? "https://i.ytimg.com/vi/" + id + "/hqdefault.jpg" : "";
+    }
+
+    function setPosterFallback(container, title) {
+      container.replaceChildren(makeElement("div", "poster-placeholder", title || "ChrisFlix"));
+    }
+
+    function addPoster(container, movie) {
+      const imageUrl = getPoster(movie);
+      if (!imageUrl) {
+        setPosterFallback(container, movie.title || "ChrisFlix");
+        return;
+      }
+      const img = document.createElement("img");
+      img.src = imageUrl;
+      img.alt = movie.title || "Movie poster";
+      img.loading = "lazy";
+      img.onerror = () => setPosterFallback(container, movie.title || "ChrisFlix");
+      container.appendChild(img);
+    }
+
+    function makeMovieCard(movie) {
+      const card = makeElement("article", "movie-card");
+      card.tabIndex = 0;
+      card.setAttribute("role", "button");
+      card.setAttribute("aria-label", "View " + (movie.title || "movie"));
+
+      const poster = makeElement("div", "poster");
+      addPoster(poster, movie);
+
+      const title = makeElement("h3", "", movie.title || "Untitled");
+      const metaParts = [];
+
+      if (movie.release_year) metaParts.push(String(movie.release_year));
+      if (movie.category) metaParts.push(movie.category);
+
+      card.append(
+        poster,
+        title,
+        makeElement("div", "movie-meta", metaParts.join(" • "))
+      );
+
+      const open = () => openMovie(movie);
+      card.addEventListener("click", open);
+
+      card.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          open();
+        }
+      });
+
+      return card;
+    }
+
+    function renderMovies() {
+      const query = document.getElementById("searchInput").value.trim().toLowerCase();
+      const category = document.getElementById("categoryFilter").value;
+
+      const filtered = movies.filter(movie => {
+        const searchable = [
+          movie.title,
+          movie.description,
+          movie.category,
+          movie.release_year
+        ].map(value => value == null ? "" : String(value))
+         .join(" ")
+         .toLowerCase();
+
+        return searchable.includes(query) &&
+          (category === "All" || movie.category === category);
+      });
+
+      movieGrid.replaceChildren();
+
+      if (!filtered.length) {
+        movieGrid.appendChild(
+          makeElement(
+            "p",
+            "empty",
+            movies.length
+              ? "No movies match your search."
+              : "No movies have been added yet. Check back soon!"
+          )
+        );
+      } else {
+        filtered.forEach(movie => {
+          movieGrid.appendChild(makeMovieCard(movie));
+        });
+      }
+
+      renderMyList();
+    }
+
+    async function loadMovies() {
+      movieGrid.replaceChildren(
+        makeElement("p", "empty", "Loading movies...")
+      );
+
+      if (!db) {
+        movieGrid.replaceChildren(
+          makeElement(
+            "p",
+            "empty",
+            "The movie service could not start. Please refresh or contact the site administrator."
+          )
+        );
+        return;
+      }
+
+      const { data, error } = await db.from("movies")
+        .select("id,title,youtube_url,category,description,release_year,poster_url")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        movieGrid.replaceChildren(
+          makeElement(
+            "p",
+            "empty",
+            "Couldn't load movies. Check the database connection and movie-table permissions, then refresh."
+          )
+        );
+        console.error("Movie loading error:", error.message);
+        return;
+      }
+
+      movies = data || [];
+      renderMovies();
+
+      if (currentMovie) renderRelatedMovies();
+    }
+
+    function openMovie(movie) {
+      currentMovie = movie;
+      lastFocusedElement = document.activeElement;
+
+      document.getElementById("modalTitle").textContent =
+        movie.title || "Untitled";
+
+      const meta = [];
+      if (movie.release_year) meta.push(String(movie.release_year));
+      if (movie.category) meta.push(movie.category);
+
+      document.getElementById("modalMeta").textContent = meta.join(" • ");
+      document.getElementById("modalDescription").textContent =
+        movie.description || "No description available yet.";
+
+      playerMessage.textContent = "";
+
+      resetPlayer();
+      updateListButton();
+      renderRelatedMovies();
+
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("modal-open");
+
+      document.getElementById("closeModal").focus();
+    }
+
+    function renderRelatedMovies() {
+      relatedMovies.replaceChildren();
+
+      if (!currentMovie || !movies.length) {
+        relatedMovies.appendChild(
+          makeElement("p", "related-empty", "No related movies available yet.")
+        );
+        return;
+      }
+
+      const others = movies.filter(movie => movie.id !== currentMovie.id);
+
+      const sameCategory = others.filter(movie =>
+        movie.category &&
+        currentMovie.category &&
+        String(movie.category).toLowerCase() ===
+          String(currentMovie.category).toLowerCase()
+      );
+
+      const recommendations =
+        (sameCategory.length ? sameCategory : others).slice(0, 8);
+
+      if (!recommendations.length) {
+        relatedMovies.appendChild(
+          makeElement("p", "related-empty", "Add more movies to see recommendations.")
+        );
+        return;
+      }
+
+      recommendations.forEach(movie => {
+        const card = makeElement("article", "related-card");
+
+        card.tabIndex = 0;
+        card.setAttribute("role", "button");
+        card.setAttribute("aria-label", "View " + (movie.title || "movie"));
+
+        const poster = makeElement("div", "poster");
+        addPoster(poster, movie);
+
+        const title = makeElement("h4", "", movie.title || "Untitled");
+        const meta = makeElement(
+          "div",
+          "movie-meta",
+          movie.release_year || movie.category || ""
+        );
+
+        card.append(poster, title, meta);
+
+        const open = () => {
+          openMovie(movie);
+          playMovie();
+        };
+
+        card.addEventListener("click", open);
+
+        card.addEventListener("keydown", event => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            open();
+          }
+        });
+
+        relatedMovies.appendChild(card);
+      });
+    }
+
+    function resetPlayer() {
+      playerBox.replaceChildren(
+        makeElement(
+          "div",
+          "player-placeholder",
+          "Press Watch Now to play this movie."
+        )
+      );
+    }
+
+    function closeMovie() {
+      if (!modal.classList.contains("open")) return;
+
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("modal-open");
+
+      resetPlayer();
+      currentMovie = null;
+      playerMessage.textContent = "";
+
+      if (lastFocusedElement &&
+          typeof lastFocusedElement.focus === "function") {
+        lastFocusedElement.focus();
+      }
+    }
+
+    function playMovie() {
+      if (!currentMovie) return;
+
+      const videoId = getYouTubeId(currentMovie.youtube_url || "");
+
+      if (!videoId) {
+        resetPlayer();
+        playerMessage.textContent =
+          "This movie doesn't have a valid YouTube link yet.";
+        return;
+      }
+
+      playerBox.replaceChildren();
+
+      const iframe = document.createElement("iframe");
+      iframe.src =
+        "https://www.youtube-nocookie.com/embed/" +
+        videoId +
+        "?autoplay=1&rel=0&playsinline=1";
+
+      iframe.title = currentMovie.title || "Movie player";
+      iframe.allow =
+        "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+
+      iframe.setAttribute("allowfullscreen", "");
+      iframe.referrerPolicy = "strict-origin-when-cross-origin";
+      iframe.setAttribute("loading", "eager");
+
+      playerBox.appendChild(iframe);
+
+      playerMessage.textContent =
+        "If playback fails, the video owner may have disabled embedding.";
+    }
+
+    async function loadMyList() {
+      myListIds = new Set();
+
+      if (!currentUser || !db) {
+        renderMyList();
+        updateListButton();
+        return;
+      }
+
+      const userId = currentUser.id;
+
+      const { data, error } = await db.from("watchlist")
+        .select("movie_id")
+        .eq("user_id", userId);
+
+      if (error) {
+        console.error("Watchlist error:", error.message);
+
+        document.getElementById("authMessage").textContent =
+          "You're signed in, but My List couldn't load. Check watchlist table permissions.";
+
+        renderMyList();
+        return;
+      }
+
+      if (!currentUser || currentUser.id !== userId) return;
+
+      (data || []).forEach(item => myListIds.add(item.movie_id));
+
+      renderMyList();
+      updateListButton();
+    }
+
+    function renderMyList() {
+      myListGrid.replaceChildren();
+
+      if (!currentUser) {
+        myListGrid.appendChild(
+          makeElement("p", "empty", "Sign in to save your favourite movies.")
+        );
+        return;
+      }
+
+      const savedMovies = movies.filter(movie => myListIds.has(movie.id));
+
+      if (!savedMovies.length) {
+        myListGrid.appendChild(
+          makeElement(
+            "p",
+            "empty",
+            "Your list is empty. Open a movie and tap Add to My List."
+          )
+        );
+        return;
+      }
+
+      savedMovies.forEach(movie => {
+        myListGrid.appendChild(makeMovieCard(movie));
+      });
+    }
+
+    function updateListButton() {
+      const button = document.getElementById("listBtn");
+
+      button.textContent =
+        currentMovie && myListIds.has(currentMovie.id)
+          ? "♥ Remove from My List"
+          : "♥ Add to My List";
+    }
+
+    async function toggleMyList() {
+      if (!currentUser) {
+        document.getElementById("authMessage").textContent =
+          "Please sign in or create an account to use My List.";
+
+        document.getElementById("authArea").scrollIntoView({
+          behavior: "smooth"
+        });
+
+        return;
+      }
+
+      if (!currentMovie || !db) return;
+
+      const userId = currentUser.id;
+      const movieId = currentMovie.id;
+      const wasSaved = myListIds.has(movieId);
+      const button = document.getElementById("listBtn");
+
+      button.disabled = true;
+
+      try {
+        if (wasSaved) {
+          const { error } = await db.from("watchlist")
+            .delete()
+            .eq("user_id", userId)
+            .eq("movie_id", movieId);
+
+          if (error) throw error;
+
+          myListIds.delete(movieId);
+        } else {
+          const { error } = await db.from("watchlist")
+            .insert({
+              user_id: userId,
+              movie_id: movieId
+            });
+
+          if (error) throw error;
+
+          myListIds.add(movieId);
+        }
+
+        playerMessage.textContent = wasSaved
+          ? "Movie removed from My List."
+          : "Movie added to My List! ❤️";
+
+      } catch (error) {
+        console.error("My List error:", error.message);
+
+        playerMessage.textContent =
+          "Couldn't update My List. Check your database permissions and try again.";
+
+      } finally {
+        button.disabled = false;
+        updateListButton();
+        renderMyList();
+      }
+    }
+
+    async function refreshAccount(session) {
+      const requestId = ++accountRequest;
+      currentUser = session ? session.user : null;
+      myListIds = new Set();
+
+      const authArea = document.getElementById("authArea");
+      const accountArea = document.getElementById("accountArea");
+      const accountNav = document.getElementById("accountNav");
+
+      if (currentUser) {
+        authArea.style.display = "none";
+        accountArea.style.display = "block";
+
+        document.getElementById("accountEmail").textContent =
+          "Signed in as " + (currentUser.email || "");
+
+        accountNav.textContent = "My Account";
+
+        renderMyList();
+        updateListButton();
+
+        await loadMyList();
+
+        if (requestId !== accountRequest) return;
+
+      } else {
+        authArea.style.display = "block";
+        accountArea.style.display = "none";
+        accountNav.textContent = "Sign In";
+
+        renderMyList();
+        updateListButton();
+      }
+    }
+        async function handleSignIn(event) {
+      event.preventDefault();
+
+      if (!db) {
+        document.getElementById("authMessage").textContent =
+          "The authentication service isn't available. Please refresh and try again.";
+        return;
+      }
+
+      const email = document.getElementById("authEmail").value.trim();
+      const password = document.getElementById("authPassword").value;
+      const message = document.getElementById("authMessage");
+      const submitButton = document.getElementById("authSubmit");
+
+      submitButton.disabled = true;
+      message.textContent = "Please wait...";
+
+      try {
+        const result = authMode === "signup"
+          ? await db.auth.signUp({ email, password })
+          : await db.auth.signInWithPassword({ email, password });
+
+        if (result.error) throw result.error;
+
+        if (authMode === "signup" && !result.data.session) {
+          message.textContent =
+            "Account created! Check your email to confirm your account before signing in.";
+        } else {
+          message.textContent =
+            authMode === "signup"
+              ? "Your account has been created successfully!"
+              : "Signed in successfully!";
+        }
+      } catch (error) {
+        console.error("Authentication error:", error.message);
+
+        message.textContent =
+          error.message || "Authentication failed. Please try again.";
+      } finally {
+        submitButton.disabled = false;
+      }
+    }
+
+    function switchAuthMode(mode) {
+      authMode = mode;
+
+      const submitButton = document.getElementById("authSubmit");
+      const signupButton = document.getElementById("signupBtn");
+      const passwordInput = document.getElementById("authPassword");
+
+      if (mode === "signup") {
+        submitButton.textContent = "Create Account";
+        signupButton.textContent = "Already have an account? Sign In";
+        passwordInput.autocomplete = "new-password";
+      } else {
+        submitButton.textContent = "Sign In";
+        signupButton.textContent = "Create Account";
+        passwordInput.autocomplete = "current-password";
+      }
+
+      document.getElementById("authMessage").textContent = "";
+    }
+
+    async function signOut() {
+      if (!db) return;
+
+      const button = document.getElementById("logoutBtn");
+      button.disabled = true;
+
+      try {
+        const { error } = await db.auth.signOut();
+
+        if (error) throw error;
+
+        document.getElementById("authMessage").textContent =
+          "You've signed out successfully.";
+      } catch (error) {
+        console.error("Sign-out error:", error.message);
+
+        document.getElementById("authMessage").textContent =
+          "Couldn't sign out. Please try again.";
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function toggleMyListSection() {
+      const section = document.getElementById("myListSection");
+      const isHidden = section.hidden;
+
+      section.hidden = !isHidden;
+
+      if (isHidden) {
+        renderMyList();
+        section.scrollIntoView({ behavior: "smooth" });
+      } else {
+        document.getElementById("allMoviesSection").scrollIntoView({
+          behavior: "smooth"
+        });
+      }
+    }
+
+    async function toggleFullscreen() {
+      try {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen();
+        } else if (playerBox.requestFullscreen) {
+          await playerBox.requestFullscreen();
+        } else {
+          playerMessage.textContent =
+            "Fullscreen isn't supported by this browser.";
+        }
+      } catch (error) {
+        console.error("Fullscreen error:", error);
+
+        playerMessage.textContent =
+          "Fullscreen isn't available. Try using your browser's video controls.";
+      }
+    }
+
+    // Search and category filtering
+    document.getElementById("searchInput").addEventListener(
+      "input",
+      renderMovies
+    );
+
+    document.getElementById("categoryFilter").addEventListener(
+      "change",
+      renderMovies
+    );
+
+    // Main navigation
+    document.getElementById("exploreBtn").addEventListener("click", () => {
+      document.getElementById("allMoviesSection").scrollIntoView({
+        behavior: "smooth"
+      });
+    });
+
+    document.getElementById("myListNav").addEventListener(
+      "click",
+      toggleMyListSection
+    );
+
+    document.getElementById("accountNav").addEventListener("click", () => {
+      const target = currentUser
+        ? document.getElementById("accountArea")
+        : document.getElementById("authArea");
+
+      target.scrollIntoView({ behavior: "smooth" });
+    });
+
+    // Movie modal controls
+    document.getElementById("closeModal").addEventListener(
+      "click",
+      closeMovie
+    );
+
+    document.getElementById("watchBtn").addEventListener(
+      "click",
+      playMovie
+    );
+
+    document.getElementById("listBtn").addEventListener(
+      "click",
+      toggleMyList
+    );
+
+    document.getElementById("fullscreenBtn").addEventListener(
+      "click",
+      toggleFullscreen
+    );
+
+    modal.addEventListener("click", event => {
+      if (event.target === modal) {
+        closeMovie();
+      }
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && modal.classList.contains("open")) {
+        closeMovie();
+      }
+    });
+
+    // Authentication form
+    document.getElementById("authForm").addEventListener(
+      "submit",
+      handleSignIn
+    );
+
+    document.getElementById("signupBtn").addEventListener("click", () => {
+      switchAuthMode(authMode === "signup" ? "signin" : "signup");
+    });
+
+    document.getElementById("logoutBtn").addEventListener(
+      "click",
+      signOut
+    );
+
+    // Start the application
+    async function initializeChrisFlix() {
+      if (!db) {
+        document.getElementById("authMessage").textContent =
+          "Authentication could not initialize. Please refresh the page.";
+
+        movieGrid.replaceChildren(
+          makeElement(
+            "p",
+            "empty",
+            "The website couldn't connect to its services. Please try again later."
+          )
+        );
+
+        return;
+      }
+
+      await loadMovies();
+
+      const { data, error } = await db.auth.getSession();
+
+      if (error) {
+        console.error("Session error:", error.message);
+      }
+
+      await refreshAccount(data?.session || null);
+
+      db.auth.onAuthStateChange((event, session) => {
+        if (
+          event === "SIGNED_IN" ||
+          event === "SIGNED_OUT" ||
+          event === "TOKEN_REFRESHED" ||
+          event === "USER_UPDATED"
+        ) {
+          // Defer the async work to avoid blocking the auth callback.
+          setTimeout(() => {
+            refreshAccount(session);
+          }, 0);
+        }
+      });
+    }
+
+    initializeChrisFlix();
+  </script>
+</body>
+</html>
