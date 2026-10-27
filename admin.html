@@ -1,552 +1,552 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ChrisFlix Admin</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0; padding: 20px; background: #090909;
-      color: #fff; font-family: Arial, sans-serif;
-    }
-    .container { max-width: 850px; margin: auto; }
-    h1 { color: #e50914; text-align: center; }
-    h2 { margin-top: 0; }
-    .card {
-      background: #181818; padding: 20px; border-radius: 12px;
-      margin-bottom: 20px; border: 1px solid #303030;
-    }
-    input, textarea, select {
-      display: block; width: 100%; padding: 13px; margin: 10px 0;
-      border: 1px solid #444; border-radius: 7px;
-      background: #101010; color: white; font-size: 16px;
-    }
-    textarea { min-height: 100px; resize: vertical; }
-    button {
-      border: 0; border-radius: 7px; padding: 12px 16px;
-      margin: 5px 4px 5px 0; font-size: 15px;
-      font-weight: bold; cursor: pointer;
-    }
-    button:disabled { opacity: 0.6; cursor: wait; }
-    .primary { background: #e50914; color: white; }
-    .secondary { background: #333; color: white; }
-    .movie {
-      padding: 15px 0; border-bottom: 1px solid #383838;
-      overflow-wrap: anywhere;
-    }
-    .movie:last-child { border-bottom: none; }
-    .movie strong { font-size: 18px; }
-    .muted { color: #aaa; font-size: 14px; line-height: 1.6; }
-    #dashboard { display: none; }
-    #status, #loginStatus {
-      white-space: pre-wrap; line-height: 1.5; margin-top: 12px;
-    }
-    .success { color: #55dd88; }
-    .error { color: #ff7777; }
-    a { color: #ff6868; }
-    label { display: block; margin-top: 15px; font-weight: bold; }
-    .video-option {
-      padding: 14px; margin: 15px 0;
-      border: 1px solid #383838; border-radius: 9px;
-    }
-    .video-option h3 { margin: 0; color: #ff6868; }
-    .video-option input { margin-bottom: 5px; }
-    .progress-track {
-      height: 8px; background: #333; border-radius: 99px;
-      overflow: hidden; margin: 10px 0;
-    }
-    #uploadProgress {
-      width: 0; height: 100%; background: #e50914;
-      transition: width 0.2s;
-    }
-    @media (max-width: 520px) {
-      body { padding: 12px; }
-      .card { padding: 15px; }
-      button { max-width: 100%; }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>🎬 ChrisFlix Admin</h1>
-
-    <div id="loginBox" class="card">
-      <h2>Admin Login</h2>
-      <p class="muted">Sign in with your existing ChrisFlix administrator account.</p>
-      <form id="loginForm">
-        <input type="email" id="email" placeholder="Admin email"
-          autocomplete="username" required>
-        <input type="password" id="password" placeholder="Password"
-          autocomplete="current-password" required>
-        <button class="primary" type="submit" id="loginButton">Login</button>
-      </form>
-      <p id="loginStatus" role="status"></p>
-    </div>
-
-    <div id="dashboard">
-      <div class="card">
-        <h2>🎥 Add or Edit Movie</h2>
-        <p class="muted">
-          Use a YouTube link, a Cloudinary URL, or upload a video file directly.
-          Choose only one video source for each movie.
-        </p>
-
-        <form id="movieForm">
-          <input type="hidden" id="movieId">
-
-          <label for="title">Movie Title *</label>
-          <input id="title" type="text" placeholder="Movie title" required>
-
-          <div class="video-option">
-            <h3>📺 Option 1: YouTube</h3>
-            <label for="youtubeUrl">YouTube Video Link</label>
-            <input id="youtubeUrl" type="url"
-              placeholder="https://www.youtube.com/watch?v=...">
-            <p class="muted">Leave empty if using Cloudinary or a video upload.</p>
-          </div>
-
-          <div class="video-option">
-            <h3>☁️ Option 2: Existing Cloudinary URL</h3>
-            <label for="cloudinaryUrl">Cloudinary Video URL</label>
-            <input id="cloudinaryUrl" type="url"
-              placeholder="https://res.cloudinary.com/... or player.cloudinary.com/...">
-          </div>
-
-          <div class="video-option">
-            <h3>⬆️ Option 3: Upload a Video File</h3>
-            <label for="videoFile">Choose Video File</label>
-            <input id="videoFile" type="file" accept="video/*,.mkv">
-            <p class="muted">
-              Uploads directly to Cloudinary using the configured unsigned preset.
-              Large videos may take time and use your Cloudinary storage/credits.
-            </p>
-            <div class="progress-track">
-              <div id="uploadProgress"></div>
-            </div>
-            <p id="uploadStatus" class="muted" role="status"></p>
-          </div>
-
-          <label for="category">Category *</label>
-          <select id="category" required>
-            <option value="Indian Cinema">Indian Cinema</option>
-            <option value="Nollywood">Nollywood</option>
-            <option value="Hollywood">Hollywood</option>
-            <option value="Action">Action</option>
-            <option value="Comedy">Comedy</option>
-            <option value="Drama">Drama</option>
-            <option value="Romance">Romance</option>
-            <option value="Animation">Animation</option>
-          </select>
-
-          <label for="description">Movie Description</label>
-          <textarea id="description"
-            placeholder="Write a short description of the movie..."></textarea>
-
-          <label for="releaseYear">Release Year</label>
-          <input id="releaseYear" type="number" min="1888" max="2100"
-            placeholder="e.g. 2025">
-
-          <label for="posterUrl">Poster Image Link (Optional)</label>
-          <input id="posterUrl" type="url"
-            placeholder="https://example.com/poster.jpg">
-
-          <p class="muted">
-            For Cloudinary videos, add a poster URL if you want a specific poster.
-          </p>
-
-          <button class="primary" type="submit" id="saveButton">Add Movie</button>
-          <button class="secondary" type="button" id="clearButton">Clear Form</button>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChrisFlix Admin</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; padding: 20px; background: #090909;
+        color: #fff; font-family: Arial, sans-serif;
+      }
+      .container { max-width: 850px; margin: auto; }
+      h1 { color: #e50914; text-align: center; }
+      h2 { margin-top: 0; }
+      .card {
+        background: #181818; padding: 20px; border-radius: 12px;
+        margin-bottom: 20px; border: 1px solid #303030;
+      }
+      input, textarea, select {
+        display: block; width: 100%; padding: 13px; margin: 10px 0;
+        border: 1px solid #444; border-radius: 7px;
+        background: #101010; color: white; font-size: 16px;
+      }
+      textarea { min-height: 100px; resize: vertical; }
+      button {
+        border: 0; border-radius: 7px; padding: 12px 16px;
+        margin: 5px 4px 5px 0; font-size: 15px;
+        font-weight: bold; cursor: pointer;
+      }
+      button:disabled { opacity: 0.6; cursor: wait; }
+      .primary { background: #e50914; color: white; }
+      .secondary { background: #333; color: white; }
+      .movie {
+        padding: 15px 0; border-bottom: 1px solid #383838;
+        overflow-wrap: anywhere;
+      }
+      .movie:last-child { border-bottom: none; }
+      .movie strong { font-size: 18px; }
+      .muted { color: #aaa; font-size: 14px; line-height: 1.6; }
+      #dashboard { display: none; }
+      #status, #loginStatus {
+        white-space: pre-wrap; line-height: 1.5; margin-top: 12px;
+      }
+      .success { color: #55dd88; }
+      .error { color: #ff7777; }
+      a { color: #ff6868; }
+      label { display: block; margin-top: 15px; font-weight: bold; }
+      .video-option {
+        padding: 14px; margin: 15px 0;
+        border: 1px solid #383838; border-radius: 9px;
+      }
+      .video-option h3 { margin: 0; color: #ff6868; }
+      .video-option input { margin-bottom: 5px; }
+      .progress-track {
+        height: 8px; background: #333; border-radius: 99px;
+        overflow: hidden; margin: 10px 0;
+      }
+      #uploadProgress {
+        width: 0; height: 100%; background: #e50914;
+        transition: width 0.2s;
+      }
+      @media (max-width: 520px) {
+        body { padding: 12px; }
+        .card { padding: 15px; }
+        button { max-width: 100%; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎬 ChrisFlix Admin</h1>
+  
+      <div id="loginBox" class="card">
+        <h2>Admin Login</h2>
+        <p class="muted">Sign in with your existing ChrisFlix administrator account.</p>
+        <form id="loginForm">
+          <input type="email" id="email" placeholder="Admin email"
+            autocomplete="username" required>
+          <input type="password" id="password" placeholder="Password"
+            autocomplete="current-password" required>
+          <button class="primary" type="submit" id="loginButton">Login</button>
         </form>
-        <p id="status" role="status"></p>
+        <p id="loginStatus" role="status"></p>
       </div>
-
-      <div class="card">
-        <h2>📽️ Your Movie Collection</h2>
-        <button class="secondary" id="refreshButton" type="button">Refresh Movies</button>
-        <div id="moviesList">Loading movies...</div>
-      </div>
-
-      <div class="card">
-        <button class="secondary" id="logoutButton" type="button">Logout</button>
-        <p><a href="/" target="_blank" rel="noopener">Open ChrisFlix Homepage</a></p>
+  
+      <div id="dashboard">
+        <div class="card">
+          <h2>🎥 Add or Edit Movie</h2>
+          <p class="muted">
+            Use a YouTube link, a Cloudinary URL, or upload a video file directly.
+            Choose only one video source for each movie.
+          </p>
+  
+          <form id="movieForm">
+            <input type="hidden" id="movieId">
+  
+            <label for="title">Movie Title *</label>
+            <input id="title" type="text" placeholder="Movie title" required>
+  
+            <div class="video-option">
+              <h3>📺 Option 1: YouTube</h3>
+              <label for="youtubeUrl">YouTube Video Link</label>
+              <input id="youtubeUrl" type="url"
+                placeholder="https://www.youtube.com/watch?v=...">
+              <p class="muted">Leave empty if using Cloudinary or a video upload.</p>
+            </div>
+  
+            <div class="video-option">
+              <h3>☁️ Option 2: Existing Cloudinary URL</h3>
+              <label for="cloudinaryUrl">Cloudinary Video URL</label>
+              <input id="cloudinaryUrl" type="url"
+                placeholder="https://res.cloudinary.com/... or player.cloudinary.com/...">
+            </div>
+  
+            <div class="video-option">
+              <h3>⬆️ Option 3: Upload a Video File</h3>
+              <label for="videoFile">Choose Video File</label>
+              <input id="videoFile" type="file" accept="video/*,.mkv">
+              <p class="muted">
+                Uploads directly to Cloudinary using the configured unsigned preset.
+                Large videos may take time and use your Cloudinary storage/credits.
+              </p>
+              <div class="progress-track">
+                <div id="uploadProgress"></div>
+              </div>
+              <p id="uploadStatus" class="muted" role="status"></p>
+            </div>
+  
+            <label for="category">Category *</label>
+            <select id="category" required>
+              <option value="Indian Cinema">Indian Cinema</option>
+              <option value="Nollywood">Nollywood</option>
+              <option value="Hollywood">Hollywood</option>
+              <option value="Action">Action</option>
+              <option value="Comedy">Comedy</option>
+              <option value="Drama">Drama</option>
+              <option value="Romance">Romance</option>
+              <option value="Animation">Animation</option>
+            </select>
+  
+            <label for="description">Movie Description</label>
+            <textarea id="description"
+              placeholder="Write a short description of the movie..."></textarea>
+  
+            <label for="releaseYear">Release Year</label>
+            <input id="releaseYear" type="number" min="1888" max="2100"
+              placeholder="e.g. 2025">
+  
+            <label for="posterUrl">Poster Image Link (Optional)</label>
+            <input id="posterUrl" type="url"
+              placeholder="https://example.com/poster.jpg">
+  
+            <p class="muted">
+              For Cloudinary videos, add a poster URL if you want a specific poster.
+            </p>
+  
+            <button class="primary" type="submit" id="saveButton">Add Movie</button>
+            <button class="secondary" type="button" id="clearButton">Clear Form</button>
+          </form>
+          <p id="status" role="status"></p>
+        </div>
+  
+        <div class="card">
+          <h2>📽️ Your Movie Collection</h2>
+          <button class="secondary" id="refreshButton" type="button">Refresh Movies</button>
+          <div id="moviesList">Loading movies...</div>
+        </div>
+  
+        <div class="card">
+          <button class="secondary" id="logoutButton" type="button">Logout</button>
+          <p><a href="/" target="_blank" rel="noopener">Open ChrisFlix Homepage</a></p>
+        </div>
       </div>
     </div>
-  </div>
-    <script>
-    const SUPABASE_URL = "https://fkjgfapbqshtbvqsfqok.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_aiT_SYadkUUPpEwLaZtJFQ_0tFeb0sf";
-
-    const CLOUDINARY_CLOUD_NAME = "oxa5idvn";
-    const CLOUDINARY_UPLOAD_PRESET = "Chrisflix_videos";
-
-    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    const loginBox = document.getElementById("loginBox");
-    const dashboard = document.getElementById("dashboard");
-    const loginStatus = document.getElementById("loginStatus");
-    const status = document.getElementById("status");
-    const moviesList = document.getElementById("moviesList");
-    const saveButton = document.getElementById("saveButton");
-    const uploadStatus = document.getElementById("uploadStatus");
-    const uploadProgress = document.getElementById("uploadProgress");
-
-    function showMessage(element, message, isError = false) {
-      element.textContent = message;
-      element.className = isError ? "error" : "success";
-    }
-
-    function showLoggedOut() {
-      loginBox.style.display = "block";
-      dashboard.style.display = "none";
-    }
-
-    function showLoggedIn() {
-      loginBox.style.display = "none";
-      dashboard.style.display = "block";
-    }
-
-    function validYouTubeUrl(value) {
-      try {
-        const url = new URL(value);
-        const host = url.hostname.toLowerCase();
-        return host === "youtube.com" ||
-          host.endsWith(".youtube.com") ||
-          host === "youtu.be" ||
-          host === "youtube-nocookie.com" ||
-          host.endsWith(".youtube-nocookie.com");
-      } catch {
-        return false;
+      <script>
+      const SUPABASE_URL = "https://fkjgfapbqshtbvqsfqok.supabase.co";
+      const SUPABASE_KEY = "sb_publishable_aiT_SYadkUUPpEwLaZtJFQ_0tFeb0sf";
+  
+      const CLOUDINARY_CLOUD_NAME = "oxa5idvn";
+      const CLOUDINARY_UPLOAD_PRESET = "Chrisflix_videos";
+  
+      const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  
+      const loginBox = document.getElementById("loginBox");
+      const dashboard = document.getElementById("dashboard");
+      const loginStatus = document.getElementById("loginStatus");
+      const status = document.getElementById("status");
+      const moviesList = document.getElementById("moviesList");
+      const saveButton = document.getElementById("saveButton");
+      const uploadStatus = document.getElementById("uploadStatus");
+      const uploadProgress = document.getElementById("uploadProgress");
+  
+      function showMessage(element, message, isError = false) {
+        element.textContent = message;
+        element.className = isError ? "error" : "success";
       }
-    }
-
-    function validCloudinaryUrl(value) {
-      try {
-        const url = new URL(value);
-        return url.protocol === "https:" && (
-          url.hostname.toLowerCase() === "player.cloudinary.com" ||
-          url.hostname.toLowerCase() === "res.cloudinary.com"
-        );
-      } catch {
-        return false;
+  
+      function showLoggedOut() {
+        loginBox.style.display = "block";
+        dashboard.style.display = "none";
       }
-    }
-
-    async function checkAdmin() {
-      const { data: { session }, error } = await db.auth.getSession();
-
-      if (error || !session) {
-        showLoggedOut();
-        return;
+  
+      function showLoggedIn() {
+        loginBox.style.display = "none";
+        dashboard.style.display = "block";
       }
-
-      showLoggedIn();
-      await loadMovies();
-    }
-
-    document.getElementById("loginForm").addEventListener("submit", async function(event) {
-      event.preventDefault();
-
-      const button = document.getElementById("loginButton");
-      button.disabled = true;
-      loginStatus.textContent = "Logging in...";
-
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
-
-      const { error } = await db.auth.signInWithPassword({ email, password });
-      button.disabled = false;
-
-      if (error) {
-        showMessage(loginStatus, error.message, true);
-        return;
+  
+      function validYouTubeUrl(value) {
+        try {
+          const url = new URL(value);
+          const host = url.hostname.toLowerCase();
+          return host === "youtube.com" ||
+            host.endsWith(".youtube.com") ||
+            host === "youtu.be" ||
+            host === "youtube-nocookie.com" ||
+            host.endsWith(".youtube-nocookie.com");
+        } catch {
+          return false;
+        }
       }
-
-      loginStatus.textContent = "";
-      await checkAdmin();
-    });
-
-    async function uploadVideoToCloudinary(file) {
-      const endpoint =
-        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`;
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-
-      uploadStatus.textContent = "Uploading video to Cloudinary...";
-      uploadProgress.style.width = "0%";
-
-      const result = await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", endpoint);
-
-        xhr.upload.addEventListener("progress", function(event) {
-          if (event.lengthComputable) {
-            const percent = Math.round((event.loaded / event.total) * 100);
-            uploadProgress.style.width = percent + "%";
-            uploadStatus.textContent = `Uploading video... ${percent}%`;
-          }
-        });
-
-        xhr.onload = function() {
-          let response;
-
-          try {
-            response = JSON.parse(xhr.responseText);
-          } catch {
-            reject(new Error("Cloudinary returned an unreadable response."));
-            return;
-          }
-
-          if (xhr.status >= 200 && xhr.status < 300 && response.secure_url) {
-            resolve(response);
-          } else {
-            reject(new Error(response.error?.message || "Cloudinary upload failed."));
-          }
-        };
-
-        xhr.onerror = () => reject(new Error("Network error while uploading to Cloudinary."));
-        xhr.onabort = () => reject(new Error("Cloudinary upload was cancelled."));
-        xhr.send(formData);
-      });
-
-      uploadProgress.style.width = "100%";
-      uploadStatus.textContent = "Upload complete.";
-      return result.secure_url;
-    }
-
-    document.getElementById("movieForm").addEventListener("submit", async function(event) {
-      event.preventDefault();
-
-      status.textContent = "";
-      uploadStatus.textContent = "";
-
-      const id = document.getElementById("movieId").value;
-      const title = document.getElementById("title").value.trim();
-      const youtubeUrl = document.getElementById("youtubeUrl").value.trim();
-      const cloudinaryUrl = document.getElementById("cloudinaryUrl").value.trim();
-      const videoFile = document.getElementById("videoFile").files[0];
-      const category = document.getElementById("category").value;
-      const description = document.getElementById("description").value.trim();
-      const yearValue = document.getElementById("releaseYear").value.trim();
-      const posterUrl = document.getElementById("posterUrl").value.trim();
-
-      if (!title) {
-        showMessage(status, "Please enter a movie title.", true);
-        return;
+  
+      function validCloudinaryUrl(value) {
+        try {
+          const url = new URL(value);
+          return url.protocol === "https:" && (
+            url.hostname.toLowerCase() === "player.cloudinary.com" ||
+            url.hostname.toLowerCase() === "res.cloudinary.com"
+          );
+        } catch {
+          return false;
+        }
       }
-
-      const sourceCount = [youtubeUrl, cloudinaryUrl, videoFile].filter(Boolean).length;
-
-      if (sourceCount !== 1) {
-        showMessage(status,
-          "Choose exactly ONE source: YouTube, an existing Cloudinary URL, or a video file upload.",
-          true);
-        return;
-      }
-
-      if (youtubeUrl && !validYouTubeUrl(youtubeUrl)) {
-        showMessage(status, "Please enter a valid YouTube URL.", true);
-        return;
-      }
-
-      if (cloudinaryUrl && !validCloudinaryUrl(cloudinaryUrl)) {
-        showMessage(status, "Please enter a valid HTTPS Cloudinary URL.", true);
-        return;
-      }
-
-      // Accept MKV even if iPhone Safari reports a blank or unusual MIME type.
-      if (
-        videoFile &&
-        !videoFile.type.startsWith("video/") &&
-        !videoFile.name.toLowerCase().endsWith(".mkv")
-      ) {
-        showMessage(status, "Please choose a valid video file.", true);
-        return;
-      }
-
-      let releaseYear = null;
-
-      if (yearValue !== "") {
-        releaseYear = Number(yearValue);
-
-        if (!Number.isInteger(releaseYear) || releaseYear < 1888 || releaseYear > 2100) {
-          showMessage(status, "Please enter a valid release year.", true);
+  
+      async function checkAdmin() {
+        const { data: { session }, error } = await db.auth.getSession();
+  
+        if (error || !session) {
+          showLoggedOut();
           return;
         }
-      }
-
-      saveButton.disabled = true;
-      document.getElementById("clearButton").disabled = true;
-      saveButton.textContent = videoFile ? "Uploading and Saving..." : "Saving...";
-      uploadProgress.style.width = "0%";
-
-      try {
-        let finalVideoUrl = cloudinaryUrl || null;
-
-        if (videoFile) {
-          finalVideoUrl = await uploadVideoToCloudinary(videoFile);
-        }
-
-        const movie = {
-          title,
-          youtube_url: youtubeUrl || "",
-          video_url: finalVideoUrl,
-          category,
-          description: description || null,
-          release_year: releaseYear,
-          poster_url: posterUrl || null
-        };
-
-        let result;
-
-        if (id) {
-          result = await db.from("movies").update(movie).eq("id", id);
-        } else {
-          result = await db.from("movies").insert([movie]);
-        }
-
-        if (result.error) {
-          throw new Error(
-            "Video upload may have succeeded, but the movie could not be saved to Supabase: " +
-            result.error.message
-          );
-        }
-
-        showMessage(status, id ? "Movie updated successfully! 🎉" : "Movie added successfully! 🎉");
-        clearForm();
+  
+        showLoggedIn();
         await loadMovies();
-
-      } catch (error) {
-        showMessage(status, "Could not save movie: " + error.message, true);
-
-      } finally {
-        saveButton.disabled = false;
-        document.getElementById("clearButton").disabled = false;
-        saveButton.textContent =
-          document.getElementById("movieId").value ? "Save Changes" : "Add Movie";
       }
-    });
-
-    function clearForm() {
-      document.getElementById("movieForm").reset();
-      document.getElementById("movieId").value = "";
-      saveButton.textContent = "Add Movie";
-      status.textContent = "";
-      uploadStatus.textContent = "";
-      uploadProgress.style.width = "0%";
-    }
-
-    document.getElementById("clearButton").addEventListener("click", clearForm);
-    document.getElementById("refreshButton").addEventListener("click", loadMovies);
-
-    async function loadMovies() {
-      moviesList.textContent = "Loading movies...";
-
-      const { data, error } = await db
-        .from("movies")
-        .select("id, title, youtube_url, video_url, category, description, release_year, poster_url")
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        moviesList.textContent = "Could not load movies: " + error.message;
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        moviesList.textContent = "No movies have been added yet.";
-        return;
-      }
-
-      moviesList.replaceChildren();
-
-      data.forEach(function(movie) {
-        const item = document.createElement("div");
-        item.className = "movie";
-
-        const title = document.createElement("strong");
-        title.textContent = movie.title || "Untitled movie";
-
-        const details = document.createElement("p");
-        details.className = "muted";
-
-        const parts = [movie.category || "Uncategorized"];
-        if (movie.release_year) parts.push(String(movie.release_year));
-
-        parts.push(movie.youtube_url ? "YouTube" :
-          (movie.video_url ? "Cloudinary" : "No video source"));
-
-        details.textContent = parts.join(" • ");
-
-        const description = document.createElement("p");
-        description.className = "muted";
-        description.textContent = movie.description || "No description";
-
-        const editButton = document.createElement("button");
-        editButton.className = "secondary";
-        editButton.textContent = "Edit";
-
-        editButton.addEventListener("click", function() {
-          document.getElementById("movieId").value = movie.id;
-          document.getElementById("title").value = movie.title || "";
-          document.getElementById("youtubeUrl").value = movie.youtube_url || "";
-          document.getElementById("cloudinaryUrl").value = movie.video_url || "";
-          document.getElementById("videoFile").value = "";
-          document.getElementById("category").value = movie.category || "Hollywood";
-          document.getElementById("description").value = movie.description || "";
-          document.getElementById("releaseYear").value = movie.release_year || "";
-          document.getElementById("posterUrl").value = movie.poster_url || "";
-
-          saveButton.textContent = "Save Changes";
-          status.textContent = "Editing: " + (movie.title || "Untitled movie");
-          window.scrollTo({ top: 0, behavior: "smooth" });
+  
+      document.getElementById("loginForm").addEventListener("submit", async function(event) {
+        event.preventDefault();
+  
+        const button = document.getElementById("loginButton");
+        button.disabled = true;
+        loginStatus.textContent = "Logging in...";
+  
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+  
+        const { error } = await db.auth.signInWithPassword({ email, password });
+        button.disabled = false;
+  
+        if (error) {
+          showMessage(loginStatus, error.message, true);
+          return;
+        }
+  
+        loginStatus.textContent = "";
+        await checkAdmin();
+      });
+  
+      async function uploadVideoToCloudinary(file) {
+        const endpoint =
+          `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`;
+  
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+  
+        uploadStatus.textContent = "Uploading video to Cloudinary...";
+        uploadProgress.style.width = "0%";
+  
+        const result = await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("POST", endpoint);
+  
+          xhr.upload.addEventListener("progress", function(event) {
+            if (event.lengthComputable) {
+              const percent = Math.round((event.loaded / event.total) * 100);
+              uploadProgress.style.width = percent + "%";
+              uploadStatus.textContent = `Uploading video... ${percent}%`;
+            }
+          });
+  
+          xhr.onload = function() {
+            let response;
+  
+            try {
+              response = JSON.parse(xhr.responseText);
+            } catch {
+              reject(new Error("Cloudinary returned an unreadable response."));
+              return;
+            }
+  
+            if (xhr.status >= 200 && xhr.status < 300 && response.secure_url) {
+              resolve(response);
+            } else {
+              reject(new Error(response.error?.message || "Cloudinary upload failed."));
+            }
+          };
+  
+          xhr.onerror = () => reject(new Error("Network error while uploading to Cloudinary."));
+          xhr.onabort = () => reject(new Error("Cloudinary upload was cancelled."));
+          xhr.send(formData);
         });
-
-        const deleteButton = document.createElement("button");
-        deleteButton.className = "primary";
-        deleteButton.textContent = "Delete";
-
-        deleteButton.addEventListener("click", async function() {
-          const confirmed = window.confirm(
-            `Are you sure you want to delete "${movie.title}"?`
-          );
-
-          if (!confirmed) return;
-
-          deleteButton.disabled = true;
-          const { error } = await db.from("movies").delete().eq("id", movie.id);
-          deleteButton.disabled = false;
-
-          if (error) {
-            showMessage(status, "Could not delete movie: " + error.message, true);
+  
+        uploadProgress.style.width = "100%";
+        uploadStatus.textContent = "Upload complete.";
+        return result.secure_url;
+      }
+  
+      document.getElementById("movieForm").addEventListener("submit", async function(event) {
+        event.preventDefault();
+  
+        status.textContent = "";
+        uploadStatus.textContent = "";
+  
+        const id = document.getElementById("movieId").value;
+        const title = document.getElementById("title").value.trim();
+        const youtubeUrl = document.getElementById("youtubeUrl").value.trim();
+        const cloudinaryUrl = document.getElementById("cloudinaryUrl").value.trim();
+        const videoFile = document.getElementById("videoFile").files[0];
+        const category = document.getElementById("category").value;
+        const description = document.getElementById("description").value.trim();
+        const yearValue = document.getElementById("releaseYear").value.trim();
+        const posterUrl = document.getElementById("posterUrl").value.trim();
+  
+        if (!title) {
+          showMessage(status, "Please enter a movie title.", true);
+          return;
+        }
+  
+        const sourceCount = [youtubeUrl, cloudinaryUrl, videoFile].filter(Boolean).length;
+  
+        if (sourceCount !== 1) {
+          showMessage(status,
+            "Choose exactly ONE source: YouTube, an existing Cloudinary URL, or a video file upload.",
+            true);
+          return;
+        }
+  
+        if (youtubeUrl && !validYouTubeUrl(youtubeUrl)) {
+          showMessage(status, "Please enter a valid YouTube URL.", true);
+          return;
+        }
+  
+        if (cloudinaryUrl && !validCloudinaryUrl(cloudinaryUrl)) {
+          showMessage(status, "Please enter a valid HTTPS Cloudinary URL.", true);
+          return;
+        }
+  
+        // Accept MKV even if iPhone Safari reports a blank or unusual MIME type.
+        if (
+          videoFile &&
+          !videoFile.type.startsWith("video/") &&
+          !videoFile.name.toLowerCase().endsWith(".mkv")
+        ) {
+          showMessage(status, "Please choose a valid video file.", true);
+          return;
+        }
+  
+        let releaseYear = null;
+  
+        if (yearValue !== "") {
+          releaseYear = Number(yearValue);
+  
+          if (!Number.isInteger(releaseYear) || releaseYear < 1888 || releaseYear > 2100) {
+            showMessage(status, "Please enter a valid release year.", true);
             return;
           }
-
-          showMessage(status, "Movie deleted successfully.");
+        }
+  
+        saveButton.disabled = true;
+        document.getElementById("clearButton").disabled = true;
+        saveButton.textContent = videoFile ? "Uploading and Saving..." : "Saving...";
+        uploadProgress.style.width = "0%";
+  
+        try {
+          let finalVideoUrl = cloudinaryUrl || null;
+  
+          if (videoFile) {
+            finalVideoUrl = await uploadVideoToCloudinary(videoFile);
+          }
+  
+          const movie = {
+            title,
+            youtube_url: youtubeUrl || "",
+            video_url: finalVideoUrl,
+            category,
+            description: description || null,
+            release_year: releaseYear,
+            poster_url: posterUrl || null
+          };
+  
+          let result;
+  
+          if (id) {
+            result = await db.from("movies").update(movie).eq("id", id);
+          } else {
+            result = await db.from("movies").insert([movie]);
+          }
+  
+          if (result.error) {
+            throw new Error(
+              "Video upload may have succeeded, but the movie could not be saved to Supabase: " +
+              result.error.message
+            );
+          }
+  
+          showMessage(status, id ? "Movie updated successfully! 🎉" : "Movie added successfully! 🎉");
+          clearForm();
           await loadMovies();
-        });
-
-        item.appendChild(title);
-        item.appendChild(details);
-        item.appendChild(description);
-        item.appendChild(editButton);
-        item.appendChild(deleteButton);
-        moviesList.appendChild(item);
+  
+        } catch (error) {
+          showMessage(status, "Could not save movie: " + error.message, true);
+  
+        } finally {
+          saveButton.disabled = false;
+          document.getElementById("clearButton").disabled = false;
+          saveButton.textContent =
+            document.getElementById("movieId").value ? "Save Changes" : "Add Movie";
+        }
       });
-    }
-
-    document.getElementById("logoutButton").addEventListener("click", async function() {
-      await db.auth.signOut();
-      showLoggedOut();
-    });
-
-    db.auth.onAuthStateChange(function(event, session) {
-      if (!session) showLoggedOut();
-    });
-
-    checkAdmin();
-  </script>
-</body>
-</html>
+  
+      function clearForm() {
+        document.getElementById("movieForm").reset();
+        document.getElementById("movieId").value = "";
+        saveButton.textContent = "Add Movie";
+        status.textContent = "";
+        uploadStatus.textContent = "";
+        uploadProgress.style.width = "0%";
+      }
+  
+      document.getElementById("clearButton").addEventListener("click", clearForm);
+      document.getElementById("refreshButton").addEventListener("click", loadMovies);
+  
+      async function loadMovies() {
+        moviesList.textContent = "Loading movies...";
+  
+        const { data, error } = await db
+          .from("movies")
+          .select("id, title, youtube_url, video_url, category, description, release_year, poster_url")
+          .order("created_at", { ascending: false });
+  
+        if (error) {
+          moviesList.textContent = "Could not load movies: " + error.message;
+          return;
+        }
+  
+        if (!data || data.length === 0) {
+          moviesList.textContent = "No movies have been added yet.";
+          return;
+        }
+  
+        moviesList.replaceChildren();
+  
+        data.forEach(function(movie) {
+          const item = document.createElement("div");
+          item.className = "movie";
+  
+          const title = document.createElement("strong");
+          title.textContent = movie.title || "Untitled movie";
+  
+          const details = document.createElement("p");
+          details.className = "muted";
+  
+          const parts = [movie.category || "Uncategorized"];
+          if (movie.release_year) parts.push(String(movie.release_year));
+  
+          parts.push(movie.youtube_url ? "YouTube" :
+            (movie.video_url ? "Cloudinary" : "No video source"));
+  
+          details.textContent = parts.join(" • ");
+  
+          const description = document.createElement("p");
+          description.className = "muted";
+          description.textContent = movie.description || "No description";
+  
+          const editButton = document.createElement("button");
+          editButton.className = "secondary";
+          editButton.textContent = "Edit";
+  
+          editButton.addEventListener("click", function() {
+            document.getElementById("movieId").value = movie.id;
+            document.getElementById("title").value = movie.title || "";
+            document.getElementById("youtubeUrl").value = movie.youtube_url || "";
+            document.getElementById("cloudinaryUrl").value = movie.video_url || "";
+            document.getElementById("videoFile").value = "";
+            document.getElementById("category").value = movie.category || "Hollywood";
+            document.getElementById("description").value = movie.description || "";
+            document.getElementById("releaseYear").value = movie.release_year || "";
+            document.getElementById("posterUrl").value = movie.poster_url || "";
+  
+            saveButton.textContent = "Save Changes";
+            status.textContent = "Editing: " + (movie.title || "Untitled movie");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          });
+  
+          const deleteButton = document.createElement("button");
+          deleteButton.className = "primary";
+          deleteButton.textContent = "Delete";
+  
+          deleteButton.addEventListener("click", async function() {
+            const confirmed = window.confirm(
+              `Are you sure you want to delete "${movie.title}"?`
+            );
+  
+            if (!confirmed) return;
+  
+            deleteButton.disabled = true;
+            const { error } = await db.from("movies").delete().eq("id", movie.id);
+            deleteButton.disabled = false;
+  
+            if (error) {
+              showMessage(status, "Could not delete movie: " + error.message, true);
+              return;
+            }
+  
+            showMessage(status, "Movie deleted successfully.");
+            await loadMovies();
+          });
+  
+          item.appendChild(title);
+          item.appendChild(details);
+          item.appendChild(description);
+          item.appendChild(editButton);
+          item.appendChild(deleteButton);
+          moviesList.appendChild(item);
+        });
+      }
+  
+      document.getElementById("logoutButton").addEventListener("click", async function() {
+        await db.auth.signOut();
+        showLoggedOut();
+      });
+  
+      db.auth.onAuthStateChange(function(event, session) {
+        if (!session) showLoggedOut();
+      });
+  
+      checkAdmin();
+    </script>
+  </body>
+  </
